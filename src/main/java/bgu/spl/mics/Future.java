@@ -59,7 +59,10 @@ public class Future<T> {
      *         elapsed, return null.
      */
 	public T get(long timeout, TimeUnit unit) {
-		//TODO: implement this.
+		if (isDone()){
+			
+			return result
+		}
 		return null;
 	}
 
