@@ -13,14 +13,20 @@ import java.util.concurrent.LinkedBlockingQueue;
  * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
+	//Singleton fileds:
 	private static MessageBusImpl instance = null;
 	private static final Object lock = new Object();
+
+	//Class Dete Strecture:
+	//Brodcast:
 	private final ConcurrentHashMap<MicroService, BlockingQueue<Broadcast>> brodQ;
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
+	//Event
 	private final ConcurrentHashMap<MicroService, BlockingQueue<Event<?>>> eventQ;
 	private final ConcurrentHashMap<Class <? extends Event<?>>, BlockingQueue<MicroService>> eventSub;
 	private final ConcurrentHashMap<Event<?>, Future<?>> eventToFuture;
 
+	/********************************************* Constrector ***************************************************/
 	private MessageBusImpl() { //Using private constractor to make sure there is single instance from this class
 		brodQ = new ConcurrentHashMap<>();
 		brodSub = new ConcurrentHashMap<>();
@@ -28,7 +34,20 @@ public class MessageBusImpl implements MessageBus {
 		eventSub = new ConcurrentHashMap<>();
 		eventToFuture= new ConcurrentHashMap<>();
 	}
-	
+
+	//Singleton
+	public static MessageBusImpl getInstance() {
+        if (instance == null) {
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new MessageBusImpl();
+                }
+            }
+        }
+        return instance;
+    }
+
+	/********************************************* Methods ***************************************************/
 	@Override
 	public synchronized <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		synchronized(m) {
@@ -138,17 +157,4 @@ public class MessageBusImpl implements MessageBus {
 		}
 
 	}
-	public static MessageBusImpl getInstance() {
-        if (instance == null) {
-            synchronized (lock) {
-                if (instance == null) {
-                    instance = new MessageBusImpl();
-                }
-            }
-        }
-        return instance;
-    }
-
-	
-
 }

@@ -17,10 +17,12 @@ public class Future<T> {
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
+	/********************************* Constrector *********************************/
 	public Future() {
 		isResolved = false;	
 	}
 	
+	/********************************* Methods *********************************/
 	/**
      * retrieves the result the Future object holds if it has been resolved.
      * This is a blocking method! It waits for the computation in case it has

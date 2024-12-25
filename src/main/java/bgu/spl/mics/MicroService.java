@@ -21,12 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  */
 public abstract class MicroService implements Runnable {
-
+    //Fildes:
     private boolean terminated = false;
     private final String name;
     private MessageBus messageBus;
-    private ConcurrentHashMap<Class<?>, Callback<?>> messageToCallback;        
+    private ConcurrentHashMap<Class<? extends Message>, Callback<?>> messageToCallback;        
 
+    /********************************************* Constrector ***************************************************/
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
      *             does not have to be unique)
@@ -37,6 +38,8 @@ public abstract class MicroService implements Runnable {
         messageToCallback = new ConcurrentHashMap<>();
     }
 
+
+    /********************************************* Methods ***************************************************/
     /**
      * Subscribes to events of type {@code type} with the callback
      * {@code callback}. This means two things:
@@ -159,7 +162,7 @@ public abstract class MicroService implements Runnable {
         while (!terminated) {
             try {
                Message message = messageBus.awaitMessage(this);
-               Callback work = messageToCallback.get(message.getClass());
+               Callback<Message> work = (Callback<Message>) messageToCallback.get(message.getClass());
                work.call(message); //not sure
             }
             catch (InterruptedException e){}
