@@ -18,19 +18,17 @@ public class MessageBusImpl implements MessageBus {
 	private static final Object lock = new Object();
 
 	//Class Dete Strecture:
+	private final ConcurrentHashMap<MicroService, BlockingQueue<Message>> messageQueue;
 	//Brodcast:
-	private final ConcurrentHashMap<MicroService, BlockingQueue<Broadcast>> brodQ;
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
 	//Event
-	private final ConcurrentHashMap<MicroService, BlockingQueue<Event<?>>> eventQ;
 	private final ConcurrentHashMap<Class <? extends Event<?>>, BlockingQueue<MicroService>> eventSub;
 	private final ConcurrentHashMap<Event<?>, Future<?>> eventToFuture;
 
 	/********************************************* Constrector ***************************************************/
 	private MessageBusImpl() { //Using private constractor to make sure there is single instance from this class
-		brodQ = new ConcurrentHashMap<>();
+		messageQueue = new ConcurrentHashMap<>();
 		brodSub = new ConcurrentHashMap<>();
-		eventQ = new ConcurrentHashMap<>();
 		eventSub = new ConcurrentHashMap<>();
 		eventToFuture= new ConcurrentHashMap<>();
 	}
@@ -52,7 +50,9 @@ public class MessageBusImpl implements MessageBus {
 	public synchronized <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		synchronized(m) {
 			eventSub.putIfAbsent(type, new LinkedBlockingQueue<MicroService>());
-			eventSub.get(type).add(m);
+			synchronized(eventSub.get(type)){
+				eventSub.get(type).add(m);
+			}
 		}
 	}
 
@@ -80,7 +80,7 @@ public class MessageBusImpl implements MessageBus {
 		synchronized(list){ //list is not thread safe
 			for(MicroService m: list){
 				synchronized(m){ 
-					brodQ.get(m).add(b); // adding this brodcust to each micro that suscribe to it
+					messageQueue.get(m).add(b); // adding this brodcust to each micro that suscribe to it
 					m.notifyAll(); //notify for the awaitMessage method
 				}
 			}
@@ -100,7 +100,7 @@ public class MessageBusImpl implements MessageBus {
 		Future<T> future = new Future<>(); 
 		synchronized(m){ 
 			eventToFuture.putIfAbsent(e, future); // linking the futer and the event 
-			eventQ.get(m).add(e); // add the event to the meessege queue of micro servers
+			messageQueue.get(m).add(e); // add the event to the meessege queue of micro servers
 			try{
 				q.put(m); //adding it to the end of the queue to keep round robbin method
 			}
@@ -113,8 +113,7 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public void register(MicroService m) {
 		synchronized(m){
-			eventQ.putIfAbsent(m, new LinkedBlockingQueue<Event<?>>());
-			brodQ.putIfAbsent(m, new LinkedBlockingQueue<Broadcast>());
+			messageQueue.putIfAbsent(m, new LinkedBlockingQueue<Message>());
 		}
 
 	}
@@ -123,8 +122,7 @@ public class MessageBusImpl implements MessageBus {
 	public void unregister(MicroService m) {
 		//Remove the micro server m from their quque
 		synchronized(m){
-			eventQ.remove(m);
-			brodQ.remove(m);
+			messageQueue.remove(m);
 		}
 
 	}
@@ -133,27 +131,21 @@ public class MessageBusImpl implements MessageBus {
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		synchronized(m){
 			//throw the {@link IllegalStateException} in the case where m was never registered.
-			if (eventQ.get(m) == null && brodQ.get(m) == null){
+			if (messageQueue.get(m) == null ){
 				throw new IllegalStateException("the microService:" + m.getName() +" is unregister.");
 			}
 			//finding the message queue of the micro server m
-			BlockingQueue<Event<?>> eventQueue = eventQ.get(m);
-			BlockingQueue<Broadcast> brodQueue = brodQ.get(m);
+			BlockingQueue<Message> microMessageQueue = messageQueue.get(m);
 			
 			//waiting for new message to be send
-			while (eventQueue.isEmpty() || brodQueue.isEmpty()) { 
+			while (microMessageQueue.isEmpty()) { 
 				try{
 					m.wait(); // if there is no new message, wait for it
 				}
 				catch (InterruptedException e){}
 			}
-			//Checking where is the new message
-			if (!brodQueue.isEmpty()){
-				return brodQueue.take();
-			}
-			else{
-				return eventQueue.take();
-			}
+			
+			return microMessageQueue.take();
 		}
 
 	}
