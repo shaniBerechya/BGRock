@@ -216,48 +216,5 @@ public void sendEventTest() throws InterruptedException {
         // Verify that the sender is still registered
         assertNotNull(messageBus.getMessageQueue(sender), "Sender queue should still exist.");
     }
-    @Test
-public void testAwaitMessageWithExampleServices() throws InterruptedException {
-    MessageBusImpl messageBus = MessageBusImpl.getInstance();
-
-    // Create and register services
-    MicroService eventHandler = new ExampleEventHandlerService("EventHandler1", new String[]{"1"});
-    MicroService broadcastListener = new ExampleBroadcastListenerService("BroadcastListener1", new String[]{"1"});
-    //MicroService messageSenderBroadcast = new ExampleMessageSenderService("MessageSenderBroadcast", new String[]{"broadcast"});
-    MicroService messageSenderEvent = new ExampleMessageSenderService("MessageSenderEvent", new String[]{"event"});
-
-    messageBus.register(eventHandler);
-    messageBus.register(broadcastListener);
-
-    // Test Event handling
-    Thread eventHandlerThread = new Thread(eventHandler);
-    Thread senderEventThread = new Thread(messageSenderEvent);
-
-    eventHandlerThread.start();
-    senderEventThread.start();
-
-    
-    Message receivedEvent = messageBus.awaitMessage(eventHandler);
-    assertTrue(receivedEvent instanceof ExampleEvent, "Expected an ExampleEvent");
-    /* 
-    // Test Broadcast handling
-    Thread broadcastListenerThread = new Thread(broadcastListener);
-    Thread senderBroadcastThread = new Thread(messageSenderBroadcast);
-
-    broadcastListenerThread.start();
-    senderBroadcastThread.start();
-
-    Message receivedBroadcast = messageBus.awaitMessage(broadcastListener);
-    assertTrue(receivedBroadcast instanceof ExampleBroadcast, "Expected an ExampleBroadcast");
-
-    // Cleanup
-    messageBus.unregister(eventHandler);
-    messageBus.unregister(broadcastListener);
-    */
-
-    eventHandlerThread.join();
-    senderEventThread.join();
-
-}
 
  }

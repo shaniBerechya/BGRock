@@ -64,6 +64,7 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
+		System.out.println("subscribeBroadcast");
 		brodSub.putIfAbsent(type, new LinkedList<MicroService>());
 		microToBrod.putIfAbsent(m, new LinkedList<Class <? extends Broadcast>>());
 		synchronized(brodSub.get(type)){
@@ -85,20 +86,24 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 public void sendBroadcast(Broadcast b) {
+	System.out.println("sending..........");
     LinkedList<MicroService> list = brodSub.get(b.getClass());
-    synchronized (list) {
-		if (list != null  && !list.isEmpty()) {
-			for (MicroService m : list) {
-				synchronized (m) {
-					BlockingQueue<Message> queue = messageQueue.get(m);
-					if (queue != null) {
-						queue.add(b); // Add broadcast to each subscriber's queue
-						m.notifyAll(); // Notify subscribers waiting for messages
+    if (list != null){
+		synchronized (list) {
+			if (list != null  && !list.isEmpty()) {
+				for (MicroService m : list) {
+					System.out.println("micro: "+ m.getName());
+					synchronized (m) {
+						BlockingQueue<Message> queue = messageQueue.get(m);
+						if (queue != null) {
+							queue.add(b); // Add broadcast to each subscriber's queue
+							m.notifyAll(); // Notify subscribers waiting for messages
+						}
 					}
 				}
-			}
-		}  
-    }
+			}  
+		}
+	}
 }
 
 
@@ -171,6 +176,7 @@ public void unregister(MicroService m) {
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
+		System.out.println("awaitMessage......");
 		synchronized(m){
 			//throw the {@link IllegalStateException} in the case where m was never registered.
 			if (messageQueue.get(m) == null ){
