@@ -128,8 +128,8 @@ public void subscribeEventTest() {
     messageBus.sendBroadcast(broadcast);
 
     // Verify that the broadcast was sent correctly
-    BlockingQueue<Message> queue1 = messageBus.getMessageQueue(listener1);
-    BlockingQueue<Message> queue2 = messageBus.getMessageQueue(listener2);
+    LinkedList<Message> queue1 = messageBus.getMessageQueue(listener1);
+    LinkedList<Message> queue2 = messageBus.getMessageQueue(listener2);
 
     assertTrue(queue1.contains(broadcast));
     assertTrue(queue2.contains(broadcast));
@@ -151,7 +151,7 @@ public void sendEventTest() throws InterruptedException {
     Future<String> future = messageBus.sendEvent(event);
 
     // Verify the event is received by the handler
-    BlockingQueue<Message> queue1 = messageBus.getMessageQueue(handler);
+    LinkedList<Message> queue1 = messageBus.getMessageQueue(handler);
     assertTrue(queue1.contains(event));
     assertEquals(future, messageBus.getFuture(event));
 }
@@ -219,48 +219,22 @@ public void sendEventTest() throws InterruptedException {
         assertNotNull(messageBus.getMessageQueue(sender), "Sender queue should still exist.");
     }
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 687c8bb (Saving local changes before switching branches)
     @Test
-public void testAwaitMessageWithExampleServices() throws InterruptedException {
+    public void testAwaitMessageWaitsForMessage() throws InterruptedException {
     MessageBusImpl messageBus = MessageBusImpl.getInstance();
+    MicroService broadcastListener = new ExampleBroadcastListenerService("Listener1", new String[]{"1"});
+    MicroService broadcastSender = new ExampleMessageSenderService("Listener1", new String[]{"broadcast"});
 
-    // Create and register services
-    MicroService eventHandler = new ExampleEventHandlerService("EventHandler1", new String[]{"1"});
-    MicroService broadcastListener = new ExampleBroadcastListenerService("BroadcastListener1", new String[]{"1"});
-    //MicroService messageSenderBroadcast = new ExampleMessageSenderService("MessageSenderBroadcast", new String[]{"broadcast"});
-    MicroService messageSenderEvent = new ExampleMessageSenderService("MessageSenderEvent", new String[]{"event"});
-
-    messageBus.register(eventHandler);
     messageBus.register(broadcastListener);
-
-    // Test Event handling
-    Thread eventHandlerThread = new Thread(eventHandler);
-    Thread senderEventThread = new Thread(messageSenderEvent);
-
-    eventHandlerThread.start();
-    senderEventThread.start();
-
+    messageBus.register(broadcastSender);
     
-    Message receivedEvent = messageBus.awaitMessage(eventHandler);
-    assertTrue(receivedEvent instanceof ExampleEvent, "Expected an ExampleEvent");
-    /* 
-    // Test Broadcast handling
-    Thread broadcastListenerThread = new Thread(broadcastListener);
-    Thread senderBroadcastThread = new Thread(messageSenderBroadcast);
-
-    broadcastListenerThread.start();
-    senderBroadcastThread.start();
-
-    Message receivedBroadcast = messageBus.awaitMessage(broadcastListener);
-    assertTrue(receivedBroadcast instanceof ExampleBroadcast, "Expected an ExampleBroadcast");
-
-    // Cleanup
-    messageBus.unregister(eventHandler);
-    messageBus.unregister(broadcastListener);
-    */
-
-    eventHandlerThread.join();
-    senderEventThread.join();
-
+    Thread listener = new Thread(( -> ))
 }
 @Test
 public void testAwaitMessageSingleMessage() throws InterruptedException {
@@ -268,6 +242,7 @@ public void testAwaitMessageSingleMessage() throws InterruptedException {
     MicroService eventHandler = new ExampleEventHandlerService("EventHandler1", new String[]{"1"});
     messageBus.register(eventHandler);
 
+<<<<<<< HEAD
     // Send a single Event
     Event<String> event = new ExampleEvent("sender1");
     messageBus.subscribeEvent(ExampleEvent.class, eventHandler);
@@ -314,3 +289,8 @@ public void testAwaitMessageBlocksWhenNoMessage() throws InterruptedException {
 
 
 }
+=======
+
+
+ }
+>>>>>>> 687c8bb (Saving local changes before switching branches)
