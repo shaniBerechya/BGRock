@@ -23,7 +23,7 @@ public class MessageBusImpl implements MessageBus {
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
 	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Broadcast>>> microToBrod;
 	//Event
-	private final ConcurrentHashMap<Class <? extends Event<?>>, BlockingQueue<MicroService>> eventSub;
+	private final ConcurrentHashMap<Class <? extends Event<?>>, LinkedList<MicroService>> eventSub;
 	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Event<?>>>> microToEvent;
 	private final ConcurrentHashMap<Event<?>, Future<?>> eventToFuture;
 
@@ -53,7 +53,7 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public synchronized <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		synchronized(m) {
-			eventSub.putIfAbsent(type, new LinkedBlockingQueue<MicroService>());
+			eventSub.putIfAbsent(type, new LinkedList<MicroService>());
 			microToEvent.putIfAbsent(m, new LinkedList<Class <? extends Event<?>>>());
 			synchronized(eventSub.get(type)){
 				eventSub.get(type).add(m);
@@ -105,16 +105,13 @@ public void sendBroadcast(Broadcast b) {
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		BlockingQueue<MicroService> q = eventSub.get(e.getClass()); //Getting the all the micro servers that subscribed to this type of event
+		LinkedList<MicroService> q = eventSub.get(e.getClass()); //Getting the all the micro servers that subscribed to this type of event
 		if (q == null || q.isEmpty()) 
 			return null;
 		MicroService m = null;
-		try{
-			m = q.take(); //chossing the first micro server
-			q.put(m);//put it in the end to maintain round robbin 
-		}
-		catch (InterruptedException ex){}
-		
+		System.out.println("sending event: " + e.toString());
+		m = q.poll(); //chossing the first micro server
+		q.add(m);//put it in the end to maintain round robbin 		
 		Future<T> future = new Future<>(); 
 		synchronized(m){ 
 			eventToFuture.putIfAbsent(e, future); // linking the futer and the event 
@@ -157,7 +154,7 @@ public void unregister(MicroService m) {
         LinkedList<Class<? extends Event<?>>> eventList = microToEvent.get(m);
         if (eventList != null) {
 			for (Class<? extends Event<?>> eventType : eventList) {
-				BlockingQueue<MicroService> subscribers = eventSub.get(eventType);
+				LinkedList<MicroService> subscribers = eventSub.get(eventType);
 					synchronized (subscribers) {
 						subscribers.remove(m);
 					}				
@@ -183,9 +180,9 @@ public void unregister(MicroService m) {
 					m.wait(); // if there is no new message, wait for it
 				}
 				catch (InterruptedException e){}
-			
 			}
-			return queue.poll();
+			
+			return microMessageQueue.take();
 		}
 	}
 	// getters for testing 
@@ -197,7 +194,7 @@ public void unregister(MicroService m) {
 		return brodSub.get(type);
 	}
 
-	public BlockingQueue<MicroService> getEventSub(Class <? extends Event<?>> type){
+	public LinkedList<MicroService> getEventSub(Class <? extends Event<?>> type){
 		return eventSub.get(type);
 	}
 
