@@ -1,4 +1,5 @@
 package bgu.spl.mics.application.objects;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,8 +12,9 @@ public class StampedDetectedObjects {
     List<DetectedObject> detectedObjects;
 
     /********************************************* Constrector ***************************************************/
-    public StampedDetectedObjects(int time){
-
+    public StampedDetectedObjects(int time) {
+        this.time = time;
+        this.detectedObjects = new ArrayList<>();
     }
 
     /********************************************* Methods ***************************************************/
@@ -23,7 +25,9 @@ public class StampedDetectedObjects {
      * @post The {@code detectedObject} is added to {@code detectedObjects}.
      */
     public void addDetectedObject(DetectedObject detectedObject){
-        //TO DO
+      if (detectedObject != null) {
+            detectedObjects.add(detectedObject);
+        }
     }
 
     /**

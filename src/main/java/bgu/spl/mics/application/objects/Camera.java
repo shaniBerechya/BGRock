@@ -2,8 +2,11 @@ package bgu.spl.mics.application.objects;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import javax.net.ssl.SSLEngineResult.Status;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -31,9 +34,10 @@ public class Camera {
     int id;
     int frequency;
     String cameraDatasPath;
-    enum status {
-        Up, Down, Eror
+    enum Status {
+        Up, Down, Error
     }
+    private Status status = Status.Up;
     List<StampedDetectedObjects> detectedObjectList; 
 
     /********************************************* Constrector ***************************************************/
@@ -48,34 +52,49 @@ public class Camera {
         this.id = id;
         this.frequency = frequency;
         this.cameraDatasPath = cameraDatasPath;
+        this.status = Status.Up;
+        loadCameraData();
         
     }
 
     /********************************************* Methods ***************************************************/
-    public void loadCameraData() throws IOException {
-        try {
-            JsonElement jsonElement = JsonParser.parseReader(new FileReader(cameraDatasPath));
-            JsonObject jsonObject = jsonElement.getAsJsonObject();
-            String cameraKey = "camera" + id;
-            JsonArray cameraData = jsonObject.getAsJsonArray(cameraKey);
-
-            //iteate thro the data in the json
-            for (int i = 0; i < cameraData.size(); i++) {
-                JsonObject entry = cameraData.get(i).getAsJsonObject();
-                int time = entry.get("time").getAsInt();
-                
+    // Prepares the list of detected objects by reading the data from the camera's data path.
+    public void loadCameraData() {
+        // Initialize the list to store detected objects with timestamps
+        detectedObjectList = new ArrayList<>();
+    
+        // Create a Gson object for parsing JSON
+        Gson gson = new Gson();
+    
+        // Define the type of the data structure we expect from the JSON file based on the JSON structure
+        TypeToken<Map<String, List<Map<String, Object>>>> typeToken = new TypeToken<Map<String, List<Map<String, Object>>>>() {};
+    
+        try (FileReader reader = new FileReader(cameraDatasPath)) {
+            // Read the JSON file into the appropriate data structure
+            Map<String, List<Map<String, Object>>> allCameraData = gson.fromJson(reader, typeToken.getType());
+    
+            // Access the data for this specific camera using the camera ID
+            List<Map<String, Object>> cameraData = allCameraData.get("camera" + id);
+    
+            // Iterate over each entry in the camera data
+            for (Map<String, Object> entry : cameraData) {
+                Integer time = (Integer) entry.get("time");
                 StampedDetectedObjects stampedObjects = new StampedDetectedObjects(time);
-                
-                JsonArray detectedObjectsArray = entry.getAsJsonArray("detectedObjects");
-                for (int j = 0; j < detectedObjectsArray.size(); j++) {
-                    JsonObject obj = detectedObjectsArray.get(j).getAsJsonObject();
-                    String id = obj.get("id").getAsString();
-                    String description = obj.get("description").getAsString();
-                    
-                    DetectedObject detectedObject = new DetectedObject(id, description);
+    
+                // Get the list of detected objects at this timestamp
+                List<Map<String, String>> detectedObjects = (List<Map<String, String>>) entry.get("detectedObjects");
+    
+                // Process each detected object
+                for (Map<String, String> obj : detectedObjects) {
+                    String objId = obj.get("id");
+                    String description = obj.get("description");
+    
+                    // Create a new DetectedObject and add it to the current stamped object list
+                    DetectedObject detectedObject = new DetectedObject(objId, description);
                     stampedObjects.addDetectedObject(detectedObject);
                 }
-                
+    
+                // Add the stamped detected objects to the main list
                 detectedObjectList.add(stampedObjects);
             }
         } catch (IOException e) {
@@ -83,17 +102,6 @@ public class Camera {
         }
     }
     
-    
-    /**
-     * Prepares the list of detected objects for a given time by reading the data from the camera's data path.
-     * 
-     * @param time The time limit at which to search for the detected objects.
-     * @post The last detected object in {@code detectedObjectList} should have a timestamp equal to {@code time}.
-     */
-    public void preparesDate(int time){
-        //TO DO
-    }
-
     /**
     * @return the {@code frequency}
     */
@@ -108,10 +116,8 @@ public class Camera {
     * @return the {@code StampedDetectedObjects} in {@code detectedObjectList} corresponding to the given {@code time} - {@code frequency}.
     */
     public StampedDetectedObjects getDetectedObject(int time){
-       //TO DO
-       return null;
+       return detectedObjectList.get(time);
     }
-
 
     
 }

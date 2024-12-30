@@ -1,5 +1,14 @@
 package bgu.spl.mics.application.objects;
+import java.util.ArrayList;
 import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.io.FileReader;
+import java.io.IOException;
+
+
+
+import javax.net.ssl.SSLEngineResult.Status;
 
 /**
  * Represents the robot's GPS and IMU system.
@@ -7,14 +16,14 @@ import java.util.List;
  */
 public class GPSIMU {
     //Fileds:
-    int currentTick;
-    String poseDatasPath;
+    private int currentTick;
+    private String poseDatasPath;
+    private List<Pose> poseList;
 
-    enum status {
-        Up, Down, Eror
+    enum Status {
+        Up, Down, Error
     }
-    List<Pose> PoseList;
-
+    private Status status = Status.Up;
     /********************************************* Constrector ***************************************************/
     /**
      * Constructs a Camera object with the given parameters.
@@ -24,29 +33,57 @@ public class GPSIMU {
      * @param poseDatasPath The file path where the GPSIMU's data is stored.
      */
     public GPSIMU(int id,int frequency,String poseDatasPath){
-        //TO DO
+        this.poseDatasPath = poseDatasPath;
+        this.poseList = new ArrayList<>();
+        loadPoseData();
     }
 
     /********************************************* Methods ***************************************************/
 
     /**
-     * Prepares the list of pose for a given time by reading the data from the GPSIMU's data path.
+     * Prepares the list of pose  by reading the data from the GPSIMU's data path.
      * 
-     * @param time The time at which to search for the detected objects.
-     * @post The last pose object in {@code PoseList} should have a timestamp equal to {@code time}.
+     * @post the list suold contins the json data
      */
-    public void preparesDate(int time){
-        //TO DO
+    /**
+     * Loads the pose data from a JSON file.
+     */
+    private void loadPoseData() {
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader(poseDatasPath)) {
+            // Define the type of the data structure expected from the JSON file
+            TypeToken<List<Pose>> typeToken = new TypeToken<List<Pose>>() {};
+            // Deserialize JSON to the expected type (List<Pose>)
+            poseList = gson.fromJson(reader, typeToken.getType());
+        } 
+        catch (IOException e) {
+            System.err.println("Error reading pose data JSON file: " + e.getMessage());
+            status = Status.Error;
+        }
     }
 
     /**
-    * Retrieves the pose from the {@code PoseList} that matches the {@code time}.
-    *
-    * @param time current time.
-    * @return the {@code Pose} in {@code PoseList} corresponding to the given {@code time}.
-    */
-    public Pose getPose(int time){
-        //TO DO
-        return null;
+     * Retrieves the pose from the poseList that matches the given time.
+     * @param time The current time for which the pose is requested.
+     * @return the Pose at the given time or null if not found.
+     */
+    public Pose getPose(int time) {
+        for (Pose pose : poseList) {
+            if (pose.getTime() == time) {
+                return pose;
+            }
+        }
+        return null; // Return null if no matching pose is found
     }
+
+    public Status getStatus() {
+        return status;
+    }
+    
+    public List<Pose> getPoseList() {
+        return poseList;
+    }
+    
+
+   
 }
