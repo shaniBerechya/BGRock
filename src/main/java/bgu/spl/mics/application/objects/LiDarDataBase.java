@@ -30,5 +30,17 @@ public class LiDarDataBase {
     }
 
     /********************************************* Methods ***************************************************/
-
+    /**
+     * Retrieves the {@link StampedCloudPoints} object corresponding to the specified {@code time}.
+     *
+     * @param time the timestamp for which the {@link StampedCloudPoints} is requested.
+     * @param id the id for which the {@link StampedCloudPoints} is requested.
+     * @return the {@link StampedCloudPoints} whose {@code time} matches the specified {@code time},
+     * and {@code id} matches the specified {@code id}
+     *  or {@code null} if no matching {@link StampedCloudPoints} is found.
+     */
+    public StampedCloudPoints getStampedCloudPoints(int time,  String id) {
+        // TO DO
+        return null;
+    }
 }

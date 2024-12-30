@@ -1,4 +1,24 @@
 package bgu.spl.mics.application.objects;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -25,10 +45,45 @@ public class Camera {
      * @param cameraDatasPath The file path where the camera's data is stored.
      */
     public Camera(int id,int frequency,String cameraDatasPath){
-        //TO DO
+        this.id = id;
+        this.frequency = frequency;
+        this.cameraDatasPath = cameraDatasPath;
+        
     }
 
     /********************************************* Methods ***************************************************/
+    public void loadCameraData() throws IOException {
+        try {
+            JsonElement jsonElement = JsonParser.parseReader(new FileReader(cameraDatasPath));
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            String cameraKey = "camera" + id;
+            JsonArray cameraData = jsonObject.getAsJsonArray(cameraKey);
+
+            //iteate thro the data in the json
+            for (int i = 0; i < cameraData.size(); i++) {
+                JsonObject entry = cameraData.get(i).getAsJsonObject();
+                int time = entry.get("time").getAsInt();
+                
+                StampedDetectedObjects stampedObjects = new StampedDetectedObjects(time);
+                
+                JsonArray detectedObjectsArray = entry.getAsJsonArray("detectedObjects");
+                for (int j = 0; j < detectedObjectsArray.size(); j++) {
+                    JsonObject obj = detectedObjectsArray.get(j).getAsJsonObject();
+                    String id = obj.get("id").getAsString();
+                    String description = obj.get("description").getAsString();
+                    
+                    DetectedObject detectedObject = new DetectedObject(id, description);
+                    stampedObjects.addDetectedObject(detectedObject);
+                }
+                
+                detectedObjectList.add(stampedObjects);
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading JSON file: " + e.getMessage());
+        }
+    }
+    
+    
     /**
      * Prepares the list of detected objects for a given time by reading the data from the camera's data path.
      * 
