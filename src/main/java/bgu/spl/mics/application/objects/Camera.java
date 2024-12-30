@@ -32,7 +32,7 @@ public class Camera {
     /**
      * Prepares the list of detected objects for a given time by reading the data from the camera's data path.
      * 
-     * @param time The time at which to search for the detected objects.
+     * @param time The time limit at which to search for the detected objects.
      * @post The last detected object in {@code detectedObjectList} should have a timestamp equal to {@code time}.
      */
     public void preparesDate(int time){
