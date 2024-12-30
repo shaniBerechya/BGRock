@@ -18,7 +18,7 @@ public class MessageBusImpl implements MessageBus {
 	private static final Object lock = new Object();
 
 	//Class Dete Strecture:
-	private final ConcurrentHashMap<MicroService, BlockingQueue<Message>> messageQueue;
+	private final ConcurrentHashMap<MicroService, LinkedList<Message>> messageQueue;
 	//Brodcast:
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
 	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Broadcast>>> microToBrod;
@@ -90,7 +90,7 @@ public void sendBroadcast(Broadcast b) {
 		if (list != null  && !list.isEmpty()) {
 			for (MicroService m : list) {
 				synchronized (m) {
-					BlockingQueue<Message> queue = messageQueue.get(m);
+					LinkedList<Message> queue = messageQueue.get(m);
 					if (queue != null) {
 						queue.add(b); // Add broadcast to each subscriber's queue
 						m.notifyAll(); // Notify subscribers waiting for messages
@@ -128,7 +128,7 @@ public void sendBroadcast(Broadcast b) {
 	@Override
 	public void register(MicroService m) {
 		synchronized(m){
-			messageQueue.putIfAbsent(m, new LinkedBlockingQueue<Message>());
+			messageQueue.putIfAbsent(m, new LinkedList<Message>());
 		}
 
 	}
@@ -173,26 +173,23 @@ public void unregister(MicroService m) {
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		synchronized(m){
 			//throw the {@link IllegalStateException} in the case where m was never registered.
-			if (messageQueue.get(m) == null ){
+			LinkedList<Message> queue = messageQueue.get(m);
+			if (queue == null) {
 				throw new IllegalStateException("the microService:" + m.getName() +" is unregister.");
 			}
-			//finding the message queue of the micro server m
-			BlockingQueue<Message> microMessageQueue = messageQueue.get(m);
-			
 			//waiting for new message to be send
-			while (microMessageQueue.isEmpty()) { 
+			while (queue.isEmpty()) { 
 				try{
 					m.wait(); // if there is no new message, wait for it
 				}
 				catch (InterruptedException e){}
-			}
 			
-			return microMessageQueue.take();
+			}
+			return queue.poll();
 		}
-
 	}
 	// getters for testing 
-	public BlockingQueue<Message> getMessageQueue(MicroService m){
+	public LinkedList<Message> getMessageQueue(MicroService m){
 		return messageQueue.get(m);
 	}
 
