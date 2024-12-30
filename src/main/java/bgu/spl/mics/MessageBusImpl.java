@@ -21,8 +21,10 @@ public class MessageBusImpl implements MessageBus {
 	private final ConcurrentHashMap<MicroService, BlockingQueue<Message>> messageQueue;
 	//Brodcast:
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
+	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Broadcast>>> microToBrod;
 	//Event
 	private final ConcurrentHashMap<Class <? extends Event<?>>, BlockingQueue<MicroService>> eventSub;
+	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Event<?>>>> microToEvent;
 	private final ConcurrentHashMap<Event<?>, Future<?>> eventToFuture;
 
 	/********************************************* Constrector ***************************************************/
@@ -31,6 +33,8 @@ public class MessageBusImpl implements MessageBus {
 		brodSub = new ConcurrentHashMap<>();
 		eventSub = new ConcurrentHashMap<>();
 		eventToFuture= new ConcurrentHashMap<>();
+		microToBrod = new ConcurrentHashMap<>();
+		microToEvent = new ConcurrentHashMap<>();
 	}
 
 	//Singleton
@@ -50,8 +54,10 @@ public class MessageBusImpl implements MessageBus {
 	public synchronized <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		synchronized(m) {
 			eventSub.putIfAbsent(type, new LinkedBlockingQueue<MicroService>());
+			microToEvent.putIfAbsent(m, new LinkedList<Class <? extends Event<?>>>());
 			synchronized(eventSub.get(type)){
 				eventSub.get(type).add(m);
+				microToEvent.get(m).add(type);
 			}
 		}
 	}
@@ -59,41 +65,53 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
 		brodSub.putIfAbsent(type, new LinkedList<MicroService>());
+		microToBrod.putIfAbsent(m, new LinkedList<Class <? extends Broadcast>>());
 		synchronized(brodSub.get(type)){
 			synchronized(m) {
 				brodSub.get(type).add(m);
+				microToBrod.get(m).add(type);
 			}
 		}
 	}
+	
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
 		//updating the result of the event in the coresponded future
-		Future future = eventToFuture.get(e);
+		Future<T> future = (Future<T>) eventToFuture.get(e);
 		future.resolve(result);
 		eventToFuture.remove(e);
 	}
 
 	@Override
-	public void sendBroadcast(Broadcast b) {
-		LinkedList<MicroService> list = brodSub.get(b.getClass()); //getting the list of the micro servers that subscribe to this brodcust
-		synchronized(list){ //list is not thread safe
-			for(MicroService m: list){
-				synchronized(m){ 
-					messageQueue.get(m).add(b); // adding this brodcust to each micro that suscribe to it
-					m.notifyAll(); //notify for the awaitMessage method
+public void sendBroadcast(Broadcast b) {
+    LinkedList<MicroService> list = brodSub.get(b.getClass());
+    synchronized (list) {
+		if (list != null  && !list.isEmpty()) {
+			for (MicroService m : list) {
+				synchronized (m) {
+					BlockingQueue<Message> queue = messageQueue.get(m);
+					if (queue != null) {
+						queue.add(b); // Add broadcast to each subscriber's queue
+						m.notifyAll(); // Notify subscribers waiting for messages
+					}
 				}
 			}
-		}
-	}
+		}  
+    }
+}
+
 
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
 		BlockingQueue<MicroService> q = eventSub.get(e.getClass()); //Getting the all the micro servers that subscribed to this type of event
+		if (q == null || q.isEmpty()) 
+			return null;
 		MicroService m = null;
 		try{
 			m = q.take(); //chossing the first micro server
+			q.put(m);//put it in the end to maintain round robbin 
 		}
 		catch (InterruptedException ex){}
 		
@@ -101,14 +119,11 @@ public class MessageBusImpl implements MessageBus {
 		synchronized(m){ 
 			eventToFuture.putIfAbsent(e, future); // linking the futer and the event 
 			messageQueue.get(m).add(e); // add the event to the meessege queue of micro servers
-			try{
-				q.put(m); //adding it to the end of the queue to keep round robbin method
-			}
-			catch (InterruptedException ex){}
 			m.notifyAll(); //notify for the awaitMessage method
 		}
 		return future;
-	}
+	
+}
 
 	@Override
 	public void register(MicroService m) {
@@ -119,13 +134,40 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 	@Override
-	public void unregister(MicroService m) {
-		//Remove the micro server m from their quque
-		synchronized(m){
-			messageQueue.remove(m);
-		}
+public void unregister(MicroService m) {
+    synchronized (m) {
+        // Remove the microservice from the message queue
+        messageQueue.remove(m);
 
-	}
+        // Remove the microservice from all broadcast subscriptions
+        LinkedList<Class<? extends Broadcast>> broadcastList = microToBrod.get(m);
+        if (broadcastList != null) {
+			for (Class<? extends Broadcast> broadcastType : broadcastList) {
+				LinkedList<MicroService> subscribers = brodSub.get(broadcastType);                  
+				synchronized (subscribers) {
+					subscribers.remove(m);
+				}                    
+			}
+            
+            // Remove the microservice entry from microToBrod
+                microToBrod.remove(m);
+        }
+
+        // Remove the microservice from all event subscriptions
+        LinkedList<Class<? extends Event<?>>> eventList = microToEvent.get(m);
+        if (eventList != null) {
+			for (Class<? extends Event<?>> eventType : eventList) {
+				BlockingQueue<MicroService> subscribers = eventSub.get(eventType);
+					synchronized (subscribers) {
+						subscribers.remove(m);
+					}				
+			}
+            // Remove the microservice entry from microToEvent
+            microToEvent.remove(m);
+        }
+    }
+}
+
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
@@ -149,4 +191,32 @@ public class MessageBusImpl implements MessageBus {
 		}
 
 	}
+	// getters for testing 
+	public BlockingQueue<Message> getMessageQueue(MicroService m){
+		return messageQueue.get(m);
+	}
+
+	public LinkedList<MicroService> getBrodSub(Class <? extends Broadcast> type){
+		return brodSub.get(type);
+	}
+
+	public BlockingQueue<MicroService> getEventSub(Class <? extends Event<?>> type){
+		return eventSub.get(type);
+	}
+
+	public Future<?> getFuture(Event<?> event){
+		return eventToFuture.get(event);
+	}
+
+	public LinkedList<Class <? extends Broadcast>> getMicroToBrod(MicroService m){
+		return microToBrod.get(m);
+	}
+
+	public LinkedList<Class <? extends Event<?>>> getMicroToEvent(MicroService m){
+		return microToEvent.get(m);
+	}
+
+
+
 }
+
