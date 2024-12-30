@@ -8,10 +8,10 @@ import java.util.List;
  */
 public class TrackedObject {
     //Fileds:
-    String id;
-    int time;
-    String description;
-    List<CloudPoint> coordinates;
+    private String id;
+    private int time;
+    private String description;
+    private List<CloudPoint> coordinates;
 
     /********************************************* Constrector ***************************************************/
     public TrackedObject(String id, int time, String description,List<CloudPoint> coordinates ){
@@ -20,7 +20,7 @@ public class TrackedObject {
         this.description = description;
         this.coordinates = coordinates;
     }
-        /********************************************* Methods ***************************************************/
+    /********************************************* Methods ***************************************************/
 
         public String getId() {
             return id;

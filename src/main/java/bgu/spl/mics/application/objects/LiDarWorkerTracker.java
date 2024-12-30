@@ -45,7 +45,7 @@ public class LiDarWorkerTracker {
     }
 
     /**
-     * Retrieves the detected object from the {@code TrackedObject} that matches the calculated time: {@code time} - {@code frequency}.
+     * Retrieves the detected object from the {@code TrackedObject} that matches the calculated time limit: {@code time} - {@code frequency}.
      *
      * @param timeTracked the time at which the object was detected by the LiDar.
      * @param time the time at which the object is tracked by the {@code LiDarWorkerTracker}.

@@ -12,7 +12,7 @@ public class FusionSlam {
     private static class FusionSlamHolder {
         // TODO: Implement singleton instance logic.
     }
-
+    //Fileds:
     ArrayList<LandMark> Landmarks;
     List<Pose> poses;
     List<Pose> waitingPoses; // List for the Poses that arrive at the Fusion-SLAM before the corresponding TrackedObject.
@@ -20,6 +20,7 @@ public class FusionSlam {
 
     /********************************************* Constrector ***************************************************/
 
+    //TO DO
     /********************************************* Methods ***************************************************/
     /**
      * Calculates and updates the landmarks corresponding to the given {@code trackedObject} using the specified {@code pose}.
