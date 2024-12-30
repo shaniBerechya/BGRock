@@ -166,10 +166,7 @@ public abstract class MicroService implements Runnable {
                work.call(message); //not sure
             }
             catch (InterruptedException e){
-<<<<<<< HEAD
                 terminate();
-=======
->>>>>>> 7386ed0f2b935b592ea4e4216e503c9c3ff06195
             }
         }
         messageBus.unregister(this);

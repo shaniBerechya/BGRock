@@ -19,6 +19,7 @@ public class MessageBusImpl implements MessageBus {
 
 	//Class Dete Strecture:
 	private final ConcurrentHashMap<MicroService, LinkedList<Message>> messageQueue;
+	private final ConcurrentHashMap<MicroService, LinkedList<Message>> messageQueue;
 	//Brodcast:
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
 	private final ConcurrentHashMap<MicroService, LinkedList<Class <? extends Broadcast>>> microToBrod;
@@ -91,6 +92,7 @@ public void sendBroadcast(Broadcast b) {
 			for (MicroService m : list) {
 				synchronized (m) {
 					LinkedList<Message> queue = messageQueue.get(m);
+					LinkedList<Message> queue = messageQueue.get(m);
 					if (queue != null) {
 						queue.add(b); // Add broadcast to each subscriber's queue
 						m.notifyAll(); // Notify subscribers waiting for messages
@@ -125,6 +127,7 @@ public void sendBroadcast(Broadcast b) {
 	@Override
 	public void register(MicroService m) {
 		synchronized(m){
+			messageQueue.putIfAbsent(m, new LinkedList<Message>());
 			messageQueue.putIfAbsent(m, new LinkedList<Message>());
 		}
 
@@ -172,20 +175,27 @@ public void unregister(MicroService m) {
 			//throw the {@link IllegalStateException} in the case where m was never registered.
 			LinkedList<Message> queue = messageQueue.get(m);
 			if (queue == null) {
+			LinkedList<Message> queue = messageQueue.get(m);
+			if (queue == null) {
 				throw new IllegalStateException("the microService:" + m.getName() +" is unregister.");
 			}
 			//waiting for new message to be send
+			while (queue.isEmpty()) { 
 			while (queue.isEmpty()) { 
 				try{
 					m.wait(); // if there is no new message, wait for it
 				}
 				catch (InterruptedException e){}
 			
+				catch (InterruptedException e){}
 			}
 			return queue.poll();
+			
+			return microMessageQueue.take();
 		}
 	}
 	// getters for testing 
+	public LinkedList<Message> getMessageQueue(MicroService m){
 	public LinkedList<Message> getMessageQueue(MicroService m){
 		return messageQueue.get(m);
 	}

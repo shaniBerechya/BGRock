@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.beans.Transient;
 import bgu.spl.mics.example.messages.ExampleBroadcast;
@@ -219,12 +220,6 @@ public void sendEventTest() throws InterruptedException {
         assertNotNull(messageBus.getMessageQueue(sender), "Sender queue should still exist.");
     }
 
-<<<<<<< HEAD
-=======
-
-
-
->>>>>>> 687c8bb (Saving local changes before switching branches)
     @Test
     public void testAwaitMessageWaitsForMessage() throws InterruptedException {
     MessageBusImpl messageBus = MessageBusImpl.getInstance();
@@ -242,7 +237,6 @@ public void testAwaitMessageSingleMessage() throws InterruptedException {
     MicroService eventHandler = new ExampleEventHandlerService("EventHandler1", new String[]{"1"});
     messageBus.register(eventHandler);
 
-<<<<<<< HEAD
     // Send a single Event
     Event<String> event = new ExampleEvent("sender1");
     messageBus.subscribeEvent(ExampleEvent.class, eventHandler);
@@ -289,8 +283,3 @@ public void testAwaitMessageBlocksWhenNoMessage() throws InterruptedException {
 
 
 }
-=======
-
-
- }
->>>>>>> 687c8bb (Saving local changes before switching branches)
