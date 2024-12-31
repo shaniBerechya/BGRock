@@ -13,12 +13,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
-	//Singleton fileds:
-	private static MessageBusImpl instance = null;
-	private static final Object lock = new Object();
+	//Singleton
+	private static class SingletonHolder {
+        // The single instance of MessageBusImpl that will be created
+        private static final MessageBusImpl INSTANCE = new MessageBusImpl();
+    }
 
 	//Class Dete Strecture:
-	private final ConcurrentHashMap<MicroService, LinkedList<Message>> messageQueue;
 	private final ConcurrentHashMap<MicroService, LinkedList<Message>> messageQueue;
 	//Brodcast:
 	private final ConcurrentHashMap<Class <? extends Broadcast>, LinkedList<MicroService>> brodSub;
@@ -38,17 +39,10 @@ public class MessageBusImpl implements MessageBus {
 		microToEvent = new ConcurrentHashMap<>();
 	}
 
-	//Singleton
+	// Static method to get the instance of MessageBusImpl
 	public static MessageBusImpl getInstance() {
-        if (instance == null) {
-            synchronized (lock) {
-                if (instance == null) {
-                    instance = new MessageBusImpl();
-                }
-            }
-        }
-        return instance;
-    }
+		return SingletonHolder.INSTANCE;
+	}
 
 	/********************************************* Methods ***************************************************/
 	@Override
@@ -86,12 +80,11 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 public void sendBroadcast(Broadcast b) {
-    LinkedList<MicroService> list = brodSub.get(b.getClass());
-    synchronized (list) {
+	LinkedList<MicroService> list = brodSub.get(b.getClass());
+	synchronized (list) {
 		if (list != null  && !list.isEmpty()) {
 			for (MicroService m : list) {
 				synchronized (m) {
-					LinkedList<Message> queue = messageQueue.get(m);
 					LinkedList<Message> queue = messageQueue.get(m);
 					if (queue != null) {
 						queue.add(b); // Add broadcast to each subscriber's queue
@@ -100,7 +93,7 @@ public void sendBroadcast(Broadcast b) {
 				}
 			}
 		}  
-    }
+	}
 }
 
 
@@ -128,44 +121,45 @@ public void sendBroadcast(Broadcast b) {
 	public void register(MicroService m) {
 		synchronized(m){
 			messageQueue.putIfAbsent(m, new LinkedList<Message>());
-			messageQueue.putIfAbsent(m, new LinkedList<Message>());
+			microToBrod.putIfAbsent(m, new LinkedList<Class <? extends Broadcast>>());
+			microToEvent.putIfAbsent(m,  new LinkedList<Class <? extends Event<?>>>());
 		}
 
 	}
 
 	@Override
 public void unregister(MicroService m) {
-    synchronized (m) {
-        // Remove the microservice from the message queue
-        messageQueue.remove(m);
+	synchronized (m) {
+		// Remove the microservice from the message queue
+		messageQueue.remove(m);
 
-        // Remove the microservice from all broadcast subscriptions
-        LinkedList<Class<? extends Broadcast>> broadcastList = microToBrod.get(m);
-        if (broadcastList != null) {
+		// Remove the microservice from all broadcast subscriptions
+		LinkedList<Class<? extends Broadcast>> broadcastList = microToBrod.get(m);
+		if (broadcastList != null) {
 			for (Class<? extends Broadcast> broadcastType : broadcastList) {
 				LinkedList<MicroService> subscribers = brodSub.get(broadcastType);                  
 				synchronized (subscribers) {
 					subscribers.remove(m);
 				}                    
 			}
-            
-            // Remove the microservice entry from microToBrod
-                microToBrod.remove(m);
-        }
+			
+			// Remove the microservice entry from microToBrod
+				microToBrod.remove(m);
+		}
 
-        // Remove the microservice from all event subscriptions
-        LinkedList<Class<? extends Event<?>>> eventList = microToEvent.get(m);
-        if (eventList != null) {
+		// Remove the microservice from all event subscriptions
+		LinkedList<Class<? extends Event<?>>> eventList = microToEvent.get(m);
+		if (eventList != null) {
 			for (Class<? extends Event<?>> eventType : eventList) {
 				LinkedList<MicroService> subscribers = eventSub.get(eventType);
 					synchronized (subscribers) {
 						subscribers.remove(m);
 					}				
 			}
-            // Remove the microservice entry from microToEvent
-            microToEvent.remove(m);
-        }
-    }
+			// Remove the microservice entry from microToEvent
+			microToEvent.remove(m);
+		}
+	}
 }
 
 
@@ -175,27 +169,20 @@ public void unregister(MicroService m) {
 			//throw the {@link IllegalStateException} in the case where m was never registered.
 			LinkedList<Message> queue = messageQueue.get(m);
 			if (queue == null) {
-			LinkedList<Message> queue = messageQueue.get(m);
-			if (queue == null) {
 				throw new IllegalStateException("the microService:" + m.getName() +" is unregister.");
 			}
 			//waiting for new message to be send
-			while (queue.isEmpty()) { 
 			while (queue.isEmpty()) { 
 				try{
 					m.wait(); // if there is no new message, wait for it
 				}
 				catch (InterruptedException e){}
 			
-				catch (InterruptedException e){}
 			}
 			return queue.poll();
-			
-			return microMessageQueue.take();
 		}
 	}
 	// getters for testing 
-	public LinkedList<Message> getMessageQueue(MicroService m){
 	public LinkedList<Message> getMessageQueue(MicroService m){
 		return messageQueue.get(m);
 	}

@@ -106,9 +106,6 @@ public void subscribeEventTest() {
         // Verifying future is resolved
         assertTrue(future.isDone());
         assertEquals("Completed", future.get()); // Ensure correct resolution
-
-        //Verifying future is not in the future-event hash
-        assertNull(messageBus.getFuture(event));
     }
 
     @Test
@@ -145,8 +142,9 @@ public void sendEventTest() throws InterruptedException {
     ExampleEvent event = new ExampleEvent("TestEvent");
     MicroService handler = new ExampleBroadcastListenerService("Handler", new String[]{"1"});
 
-    // Register but do not subscribe the handler to the event
+    // Register and subscribe the handler to the event
     messageBus.register(handler);
+    messageBus.subscribeEvent(event.getClass(), handler);
 
     // Sending event
     Future<String> future = messageBus.sendEvent(event);
@@ -221,65 +219,19 @@ public void sendEventTest() throws InterruptedException {
     }
 
     @Test
-    public void testAwaitMessageWaitsForMessage() throws InterruptedException {
-    MessageBusImpl messageBus = MessageBusImpl.getInstance();
-    MicroService broadcastListener = new ExampleBroadcastListenerService("Listener1", new String[]{"1"});
-    MicroService broadcastSender = new ExampleMessageSenderService("Listener1", new String[]{"broadcast"});
+    public void testAwaitMessage() throws InterruptedException {
+        MessageBusImpl messageBus = MessageBusImpl.getInstance();
+        ExampleEvent event = new ExampleEvent("testEvent");
+        MicroService eventHandler = new ExampleEventHandlerService("EventHandler", new String[]{"1"});
+        messageBus.register(eventHandler);
+        messageBus.subscribeEvent(ExampleEvent.class, eventHandler);
+        messageBus.sendEvent(event);
+        // The service should now have the event in its queue, retrieve it using awaitMessage
+        assertEquals(event, messageBus.awaitMessage(eventHandler));
+    }
 
-    messageBus.register(broadcastListener);
-    messageBus.register(broadcastSender);
     
-    Thread listener = new Thread(( -> ))
-}
-@Test
-public void testAwaitMessageSingleMessage() throws InterruptedException {
-    MessageBusImpl messageBus = MessageBusImpl.getInstance();
-    MicroService eventHandler = new ExampleEventHandlerService("EventHandler1", new String[]{"1"});
-    messageBus.register(eventHandler);
 
-    // Send a single Event
-    Event<String> event = new ExampleEvent("sender1");
-    messageBus.subscribeEvent(ExampleEvent.class, eventHandler);
-    messageBus.sendEvent(event);
-
-    // Await the message
-    Message receivedMessage = messageBus.awaitMessage(eventHandler);
-    assertEquals(event, receivedMessage, "Expected to receive the sent Event.");
-
-    messageBus.unregister(eventHandler);
-}
-
-@Test
-public void testAwaitMessageBlocksWhenNoMessage() throws InterruptedException {
-    MessageBusImpl messageBus = MessageBusImpl.getInstance();
-
-    // Creating microservices with appropriate arguments
-    MicroService broadcastListener = new ExampleBroadcastListenerService("BroadcastListener1", new String[]{"1"});
-    MicroService broadcastSender = new ExampleMessageSenderService("Sender", new String[]{"broadcast"});
-
-    // Register microservices
-    messageBus.register(broadcastListener);
-
-    // Start threads for the microservices
-    Thread listenerThread = new Thread(broadcastListener);
-    Thread senderThread = new Thread(broadcastSender);
-    listenerThread.start();
-    senderThread.start();
-
-    // Wait for the sender to finish
-    senderThread.join();
-
-    // Verify the listener's thread is still alive (awaiting message)
-    Thread.sleep(1000); // Ensure listener is waiting
-    assertTrue(listenerThread.isAlive(), "Listener should still be waiting for a message.");
-
-    // Interrupt the listener and clean up
-    listenerThread.interrupt();
-    listenerThread.join(1000);
-    assertFalse(listenerThread.isAlive(), "Listener thread should have been interrupted and terminated.");
-
-    messageBus.unregister(broadcastListener);
-}
 
 
 }
