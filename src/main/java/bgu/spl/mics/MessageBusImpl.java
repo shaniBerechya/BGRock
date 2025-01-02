@@ -46,7 +46,7 @@ public class MessageBusImpl implements MessageBus {
 
 	/********************************************* Methods ***************************************************/
 	@Override
-	public synchronized <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
+	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		synchronized(m) {
 			eventSub.putIfAbsent(type, new LinkedList<MicroService>());
 			microToEvent.putIfAbsent(m, new LinkedList<Class <? extends Event<?>>>());

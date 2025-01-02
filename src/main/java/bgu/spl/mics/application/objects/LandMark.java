@@ -33,9 +33,27 @@ public class LandMark {
     *   it is added to {@code this.coordinates}.
     */
 
-    public void improve(List<CloudPoint> coordinates) {
-        // TO DO
+    public void improve(List<CloudPoint> newCoordinates) {
+        int size = Math.min(coordinates.size(), newCoordinates.size());
+
+        // Average the existing points
+        for (int i = 0; i < size; i++) {
+            CloudPoint current = coordinates.get(i);
+            CloudPoint incoming = newCoordinates.get(i);
+
+            double avgX = (current.getX() + incoming.getX()) / 2;
+            double avgY = (current.getY() + incoming.getY()) / 2;
+
+            current.setX(avgX);
+            current.setY(avgY);
+        }
+
+        // Add any additional points from the incoming list
+        for (int i = size; i < newCoordinates.size(); i++) {
+            coordinates.add(newCoordinates.get(i));
+        }
     }
+
 
     //getes:
     public String getId() {

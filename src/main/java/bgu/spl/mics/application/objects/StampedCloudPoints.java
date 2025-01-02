@@ -7,9 +7,9 @@ import java.util.List;
  */
 public class StampedCloudPoints {
     //Fileds:
-    String id; //The id of th object
-    int time;
-    List<CloudPoint> cloudPoints;
+    private String id; //The id of th object
+    private int time;
+    private List<CloudPoint> cloudPoints;
     /********************************************* Constrector ***************************************************/
     public StampedCloudPoints(String id, int time, List<CloudPoint> cloudPoints){
         this.id = id;

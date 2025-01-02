@@ -1,7 +1,20 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CrashedBrodcast;
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
+import bgu.spl.mics.application.messages.TerminatedBrodcast;
+import bgu.spl.mics.application.messages.TickBrodcast;
 import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.STATUS;
+import bgu.spl.mics.application.objects.StampedDetectedObjects;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.Broadcast;
+import bgu.spl.mics.Event;
+import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
+import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.StampedDetectedObjects;
 
 /**
  * CameraService is responsible for processing data from the camera and
@@ -12,14 +25,20 @@ import bgu.spl.mics.application.objects.Camera;
  */
 public class CameraService extends MicroService {
 
+    //Fildes:
+    Camera camera;
+    int clock;
+    StatisticalFolder statisticalFolder;
     /**
      * Constructor for CameraService.
      *
      * @param camera The Camera object that this service will use to detect objects.
      */
     public CameraService(Camera camera) {
-        super("Change_This_Name");
-        // TODO Implement this
+        super("camera"+ camera.getId());
+        this.camera = camera;
+        statisticalFolder = StatisticalFolder.getInstance();
+        clock = 0;
     }
 
     /**
@@ -29,6 +48,55 @@ public class CameraService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // TODO Implement this
+        // Subscribe to TickBroadcast
+        subscribeBroadcast(TickBrodcast.class, TickBrodcast -> {
+            // Update the clock with the current time from the TickBroadcast
+            clock = TickBrodcast.getBrodcast();
+
+            //Chack for eror:
+            if(camera.getStatus() == STATUS.ERROR){
+                statisticalFolder.setErrorDescription(camera.erorDescripion(clock));
+                statisticalFolder.setFaultySensor(this);
+                CrashedBrodcast crashedBrodcast = new CrashedBrodcast();
+                sendBroadcast(crashedBrodcast);
+                terminate();
+            }
+            // Get detected objects for the current time
+            StampedDetectedObjects detectedObjects = camera.getDetectedObject(clock);
+
+            if (detectedObjects != null) {
+                // Create a DetectObjectsEvent and send it
+                DetectObjectsEvent event = new DetectObjectsEvent(detectedObjects);
+                sendEvent(event);
+
+                //Update the StatisticalFolder:
+                statisticalFolder.updateForCamera(getName(), detectedObjects);
+            }
+            
+
+            // Handle camera status
+            switch (camera.getStatus()) {
+                case DOWN:
+                    TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("camera");
+                    sendBroadcast(terminatedBrodcast);
+                    terminate();
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        subscribeBroadcast(TerminatedBrodcast.class, TerminatedBrodcast -> {
+            if(TerminatedBrodcast.getSender() == "fusion"){
+                terminate();
+            }
+        });
+
+        subscribeBroadcast(CrashedBrodcast.class, CrashedBrodcast -> {
+            terminate();
+        });
+
+        // Log initialization
+        System.out.println(getName() + " initialized.");
     }
 }

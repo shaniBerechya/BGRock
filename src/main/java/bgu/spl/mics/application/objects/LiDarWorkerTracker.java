@@ -1,5 +1,8 @@
 package bgu.spl.mics.application.objects;
+import java.util.ArrayList;
 import java.util.List;
+
+import javax.net.ssl.SSLEngineResult.Status;
 
 /**
  * LiDarWorkerTracker is responsible for managing a LiDAR worker.
@@ -11,9 +14,8 @@ public class LiDarWorkerTracker {
     int id;
     int frequency;
     List<TrackedObject> lastTrackedObject;
-    enum status {
-        Up, Down, Eror
-    }
+    private STATUS status;
+    private LiDarDataBase dataBase;
 
     /********************************************* Constrector ***************************************************/
     /**
@@ -22,20 +24,34 @@ public class LiDarWorkerTracker {
      * @param id              The unique identifier of the LiDar.
      * @param frequency       The frequency at which the LiDar operates.
      */
-    public LiDarWorkerTracker(int id,int frequency){
-        //TO DO
+        public LiDarWorkerTracker(int id, int frequency, String dataBaseFilePath) {
+        this.id = id;
+        this.frequency = frequency;
+        this.lastTrackedObject = new ArrayList<>();
+        this.status = STATUS.UP;
+        this.dataBase = LiDarDataBase.getInstance(dataBaseFilePath); // Load the singleton database
     }
+    
 
     /********************************************* Methods ***************************************************/
     /**
      * Prepares the list of {@code lastTrackedObject} using data from the {@link LiDarDataBase}.
      * 
      * @param timeDetected the time at which the object was detected by the camera.
-     * @param time the time at which the object is tracked by the {@code LiDarWorkerTracker}.
+     * @param id
      */
-    public void preparesDate(int timeDetected, int time){
-        //TO DO
+    public void addTrackedObjects(int timeDetected, String id, String description, int currentTime){
+        StampedCloudPoints stampedCoordinates = dataBase.getStampedCloudPoints(timeDetected, id);
+        if(stampedCoordinates != null){
+            List<CloudPoint> coordinates = stampedCoordinates.getCloudPoints();
+            TrackedObject trackedObject  = new TrackedObject(id, currentTime,timeDetected, description,coordinates);
+            lastTrackedObject.add(trackedObject);
+        }
+        else {
+            status = STATUS.ERROR;
+        }
     }
+
 
     /**
     * @return the {@code frequency}
@@ -51,9 +67,33 @@ public class LiDarWorkerTracker {
      * @param time the time at which the object is tracked by the {@code LiDarWorkerTracker}.
      * @return the {@code TrackedObject} corresponding to the calculated time, or {@code null} if no match is found.
      */
-    public TrackedObject getTrackedObject(int timeTracked, int time){
-        //TO DO
+    public TrackedObject getTrackedObjects (int time){
+        if(dataBase.isFinished() && lastTrackedObject.isEmpty()){
+            status = STATUS.DOWN;
+            return null;
+        }
+        else {
+            if ( lastTrackedObject.get(0).getTime() == time - frequency){
+                if(lastTrackedObject.get(0) == null){
+                    this.status = STATUS.ERROR;
+                    return null;
+                }
+                TrackedObject trackedObject = lastTrackedObject.get(0);
+                lastTrackedObject.remove(0);
+                return trackedObject;
+            }
+        }
         return null;
     }
+    public boolean isPossibleToTreack(int time){
+        return status == STATUS.UP &&(lastTrackedObject.get(0).getTime() == time - frequency);
+    }
 
+    public STATUS geStatus(){
+        return this.status;
+    }
+
+    public int getID(){
+        return this.id;
+    }
 }

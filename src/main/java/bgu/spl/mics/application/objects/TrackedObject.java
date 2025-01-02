@@ -9,14 +9,16 @@ import java.util.List;
 public class TrackedObject {
     //Fileds:
     private String id;
-    private int time;
+    private int time;//the time it was treckd by the lidar
+    private int timeDetected;
     private String description;
     private List<CloudPoint> coordinates;
 
     /********************************************* Constrector ***************************************************/
-    public TrackedObject(String id, int time, String description,List<CloudPoint> coordinates ){
+    public TrackedObject(String id, int time, int timeDetected, String description,List<CloudPoint> coordinates ){
         this.id = id;
         this.time = time;
+        this.timeDetected = timeDetected;
         this.description = description;
         this.coordinates = coordinates;
     }
@@ -37,4 +39,9 @@ public class TrackedObject {
         public List<CloudPoint> getCoordinates() {
             return coordinates;
         }
+
+        public int getTimeDetected() {
+            return timeDetected;
+        }
+
 }

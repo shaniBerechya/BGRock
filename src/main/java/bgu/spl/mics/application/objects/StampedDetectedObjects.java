@@ -8,8 +8,8 @@ import java.util.List;
  */
 public class StampedDetectedObjects {
     //Fileds:
-    int time;
-    List<DetectedObject> detectedObjects;
+    private int time;
+    private List<DetectedObject> detectedObjects;
 
     /********************************************* Constrector ***************************************************/
     public StampedDetectedObjects(int time) {
@@ -37,5 +37,17 @@ public class StampedDetectedObjects {
      */
     public List<DetectedObject> getDetectedObjects(){
         return detectedObjects;
+    }
+
+    public int getTime(){
+        return time;
+    }
+    public String erorDescripion(){
+        for(DetectedObject object : detectedObjects){
+            if(object.getId() == "ERROR"){
+                return object.getDescription();
+            }
+        }
+        return null;
     }
 }

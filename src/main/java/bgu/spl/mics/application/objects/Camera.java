@@ -2,7 +2,6 @@ package bgu.spl.mics.application.objects;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +20,6 @@ import com.google.gson.JsonParser;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -31,14 +29,12 @@ import java.util.List;
  */
 public class Camera {
     //Fileds:
-    int id;
-    int frequency;
-    String cameraDatasPath;
-    enum Status {
-        Up, Down, Error
-    }
-    private Status status = Status.Up;
-    List<StampedDetectedObjects> detectedObjectList; 
+    private int id;
+    private int frequency;
+    private String cameraDatasPath;
+    private STATUS status;
+    private List<StampedDetectedObjects> detectedObjectList; 
+    private int index;
 
     /********************************************* Constrector ***************************************************/
     /**
@@ -52,7 +48,7 @@ public class Camera {
         this.id = id;
         this.frequency = frequency;
         this.cameraDatasPath = cameraDatasPath;
-        this.status = Status.Up;
+        this.status = STATUS.UP;
         loadCameraData();
         
     }
@@ -116,8 +112,36 @@ public class Camera {
     * @return the {@code StampedDetectedObjects} in {@code detectedObjectList} corresponding to the given {@code time} - {@code frequency}.
     */
     public StampedDetectedObjects getDetectedObject(int time){
-       return detectedObjectList.get(time);
+        StampedDetectedObjects stampedDetectedObjects = null;
+        if(getLastTime()  + frequency > time){
+            status = STATUS.DOWN;
+       }
+       else  if(detectedObjectList.get(index).getTime() == time-frequency){
+            stampedDetectedObjects = detectedObjectList.get(index);
+            index = index + 1;
+       }
+       return stampedDetectedObjects;
     }
 
-    
+    public int getLastTime(){
+        return detectedObjectList.get(detectedObjectList.size() - 1).getTime();
+    }
+
+    public STATUS getStatus(){
+        return status;
+    }
+
+    public int getId(){
+        return id;
+    }
+
+    public String erorDescripion(int time){
+        for (StampedDetectedObjects stampedDetectedObjects : detectedObjectList){
+            if (stampedDetectedObjects.getTime() == time && stampedDetectedObjects.erorDescripion() != null){
+                this.status = STATUS.ERROR;
+                return stampedDetectedObjects.erorDescripion();
+            }
+        }
+        return null;
+    }
 }

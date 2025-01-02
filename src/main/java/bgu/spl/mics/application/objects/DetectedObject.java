@@ -6,8 +6,8 @@ package bgu.spl.mics.application.objects;
  */
 public class DetectedObject {
     //Fileds:
-    String id;
-    String description;
+    private String id;
+    private String description;
 
     /********************************************* Constrector ***************************************************/
     public DetectedObject(String id, String description ){

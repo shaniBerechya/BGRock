@@ -1,7 +1,15 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CrashedBrodcast;
+import bgu.spl.mics.application.messages.PoseEvent;
+import bgu.spl.mics.application.messages.TerminatedBrodcast;
+import bgu.spl.mics.application.messages.TickBrodcast;
+import bgu.spl.mics.application.messages.TrackedObjectsEvent;
 import bgu.spl.mics.application.objects.FusionSlam;
+import bgu.spl.mics.application.objects.Pose;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.objects.TrackedObject;
 
 /**
  * FusionSlamService integrates data from multiple sensors to build and update
@@ -11,14 +19,22 @@ import bgu.spl.mics.application.objects.FusionSlam;
  * transforming and updating the map with new landmarks.
  */
 public class FusionSlamService extends MicroService {
+    //Fildes:
+    FusionSlam fusionSlam;
+    int counterOfSensores;
+    private final StatisticalFolder statisticalFolder;
+
+
     /**
      * Constructor for FusionSlamService.
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
     public FusionSlamService(FusionSlam fusionSlam) {
-        super("Change_This_Name");
-        // TODO Implement this
+        super("fusionSlam");
+        this.fusionSlam = fusionSlam;
+        counterOfSensores = fusionSlam.getNumOfSensore();
+        statisticalFolder = StatisticalFolder.getInstance();
     }
 
     /**
@@ -26,8 +42,50 @@ public class FusionSlamService extends MicroService {
      * Registers the service to handle TrackedObjectsEvents, PoseEvents, and TickBroadcasts,
      * and sets up callbacks for updating the global map.
      */
-    @Override
+     @Override
     protected void initialize() {
-        // TODO Implement this
+        // Handle PoseEvent
+        subscribeEvent(PoseEvent.class, PoseEvent -> {
+            Pose pose = PoseEvent.getEvent();
+            fusionSlam.addPose(pose);
+        });
+
+        // Handle TrackedObjectsEvent
+        subscribeEvent(TrackedObjectsEvent.class, TrackedObjectsEvent -> {
+            TrackedObject trackedObject = TrackedObjectsEvent.getEvent();
+            fusionSlam.addTrackedObject(trackedObject);
+        });
+
+        // Handle TickBroadcast
+        subscribeBroadcast(TickBrodcast.class, TickBrodcast -> {
+            System.out.println("Tick " + TickBrodcast.getBrodcast() + " received by FusionSlamService.");
+        });
+
+        // Handle TerminatedBrodcast
+        subscribeBroadcast(TerminatedBrodcast.class, TerminatedBrodcast -> {
+            if(TerminatedBrodcast.getSender() == "time"){
+                TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("fusion");
+                sendBroadcast(terminatedBrodcast);
+            }
+            else if (TerminatedBrodcast.getSender() != "fusion"){
+                counterOfSensores = counterOfSensores -1; 
+                if(counterOfSensores == 0){
+                    TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("fusion");
+                    sendBroadcast(terminatedBrodcast);
+                }
+            }
+            else{
+                statisticalFolder.setLandMarks(fusionSlam.getLandmarks());
+                terminate();
+            }
+        });
+
+        // Handle TerminatedBrodcast
+        subscribeBroadcast(CrashedBrodcast.class, CrashedBrodcastnull -> {
+            terminate();
+        });
+
+        // Log initialization
+        System.out.println(getName() + " initialized.");
     }
 }
