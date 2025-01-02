@@ -150,6 +150,9 @@ public class GurionRockRunner {
 
         /************************************************** Output File *****************************************************/
         statisticalFolder.exportToJson(basePath);
+
     }
 
+
 }
+
