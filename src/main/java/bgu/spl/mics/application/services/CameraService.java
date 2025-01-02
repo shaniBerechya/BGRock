@@ -52,6 +52,7 @@ public class CameraService extends MicroService {
         subscribeBroadcast(TickBrodcast.class, TickBrodcast -> {
             // Update the clock with the current time from the TickBroadcast
             clock = TickBrodcast.getBrodcast();
+            StampedDetectedObjects detectedObjects = null;
 
             //Chack for eror:
             if(camera.getStatus() == STATUS.ERROR){
@@ -61,17 +62,20 @@ public class CameraService extends MicroService {
                 sendBroadcast(crashedBrodcast);
                 terminate();
             }
-            // Get detected objects for the current time
-            StampedDetectedObjects detectedObjects = camera.getDetectedObject(clock);
-
-            if (detectedObjects != null) {
-                // Create a DetectObjectsEvent and send it
-                DetectObjectsEvent event = new DetectObjectsEvent(detectedObjects);
-                sendEvent(event);
-
-                //Update the StatisticalFolder:
-                statisticalFolder.updateForCamera(getName(), detectedObjects);
+            // Get detected objects for the current time     
+            else if(clock < camera.getFrequency()){
+                detectedObjects = camera.getDetectedObject(clock);
+                if (detectedObjects != null) {
+                    // Create a DetectObjectsEvent and send it
+                    DetectObjectsEvent event = new DetectObjectsEvent(detectedObjects);
+                    sendEvent(event);
+    
+                    //Update the StatisticalFolder:
+                    statisticalFolder.updateForCamera(getName(), detectedObjects);
+                }
             }
+
+           
             
 
             // Handle camera status

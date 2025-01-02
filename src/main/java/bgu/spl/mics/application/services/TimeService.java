@@ -25,7 +25,7 @@ public class TimeService extends MicroService {
         super("TimeService");
         this.tickTime = tickTime;
         this.duration = duration;
-        this.currentTick = 0;
+        this.currentTick = 1; //the time of the system start at 1
     }
 
     /**
@@ -50,6 +50,10 @@ public class TimeService extends MicroService {
             }
             
         });
+
+        //Sending the first Tick after subscribe to TickBrodcast
+        TickBrodcast tickBrodcast = new TickBrodcast(currentTick);
+        sendBroadcast(tickBrodcast);
 
         subscribeBroadcast(TerminatedBrodcast.class, TerminatedBrodcast -> {
             if(TerminatedBrodcast.getSender() == "fusion"){

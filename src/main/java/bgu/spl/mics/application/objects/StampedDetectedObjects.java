@@ -44,7 +44,8 @@ public class StampedDetectedObjects {
     }
     public String erorDescripion(){
         for(DetectedObject object : detectedObjects){
-            if(object.getId() == "ERROR"){
+            String id =  object.getId();
+            if(id.equals("ERROR")) {
                 return object.getDescription();
             }
         }

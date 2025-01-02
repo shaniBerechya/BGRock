@@ -54,7 +54,7 @@ public class LiDarService extends MicroService {
             clock = TickBroadcast.getBrodcast();
 
             // Check if it is possible to track objects at the current time
-            while (liDarWorkerTracker.isPossibleToTreack(clock)) {
+            while (clock >= liDarWorkerTracker.getFrequency() && liDarWorkerTracker.isPossibleToTreack(clock)) {
                 TrackedObject trackedObject = liDarWorkerTracker.getTrackedObjects(clock);
 
                 if (trackedObject != null) {
