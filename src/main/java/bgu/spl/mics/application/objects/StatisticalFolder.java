@@ -171,7 +171,8 @@ public class StatisticalFolder {
     String json = gson.toJson(data);
 
     // Write to file
-    try (FileWriter writer = new FileWriter(filePath)) {
+    String outputPath = filePath + "/output_file.json";
+    try (FileWriter writer = new FileWriter(outputPath)) {
         writer.write(json);
     } catch (IOException e) {
         System.err.println("Error writing JSON to file: " + e.getMessage());
