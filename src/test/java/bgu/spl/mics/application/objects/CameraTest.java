@@ -85,4 +85,16 @@ public class CameraTest {
         assertEquals(2, camera.getFrequency(), "Camera frequency should be initialized correctly.");
         assertEquals(STATUS.UP, camera.getStatus(), "Camera status should be UP upon initialization.");
     }
+
+    @Test
+public void testCameraChangesToDownAfterCompletion() {
+    // Initialize camera with test data
+    camera = new Camera(1, 2, "./example_input_2/camera_data.json");  
+    // Simulate processing all time steps
+    for (int time = 1; time <= 15; time++) {
+        camera.getDetectedObject(time);
+    }
+    // Verify that the status changes to DOWN after processing all time steps
+    assertEquals(STATUS.DOWN, camera.getStatus(), "Camera status should change to DOWN after completing all detections.");
+}
 }

@@ -73,7 +73,7 @@ public class LiDarWorkerTracker {
             return null;
         }
         else {
-            if ( lastTrackedObject.get(0).getTime() <= time - frequency){
+            if ( !lastTrackedObject.isEmpty() && lastTrackedObject.get(0).getTime() <= time - frequency){
                 if(lastTrackedObject.get(0) == null){
                     this.status = STATUS.ERROR;
                     return null;

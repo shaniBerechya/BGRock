@@ -1,137 +1,158 @@
-package bgu.spl.mics.application.objects;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import bgu.spl.mics.application.messages.PoseEvent;
+import bgu.spl.mics.application.messages.TrackedObjectsEvent;
+import bgu.spl.mics.application.objects.CloudPoint;
+import bgu.spl.mics.application.objects.FusionSlam;
+import bgu.spl.mics.application.objects.LandMark;
+import bgu.spl.mics.application.objects.Pose;
+import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.services.FusionSlamService;
+
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FusionSlamTest {
 
-    private FusionSlam fusionSlam;
-    private Pose pose;
-    private ArrayList<TrackedObject> trackedObjects;
+@Test
+public void testAddTrackedObjectWithMatchingPose() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(5);
 
-    @BeforeEach
-    public void setUp() {
-        fusionSlam = FusionSlam.getInstance();
-        pose = new Pose(0.0f, 0.0f, 0.0f, 0);
+    // Create a matching pose and tracked object
+    Pose pose = new Pose(5.0f, 5.0f, 90.0f, 1);
+    ArrayList<CloudPoint> a = new ArrayList<>();
+    CloudPoint c = new CloudPoint(0.1, 0.1);
+    a.add(c);
+    TrackedObject trackedObject = new TrackedObject("Object1", 1, 1,"noam",a );
 
-        // יצירת רשימה של אובייקטים למעקב
-        trackedObjects = new ArrayList<>();
+    // Add the pose first
+    fusionSlam.addPose(pose);
 
-        ArrayList<CloudPoint> points1 = new ArrayList<>();
-        points1.add(new CloudPoint(1.0, 1.0));
-        points1.add(new CloudPoint(2.0, 2.0));
+    // Add the tracked object
+    fusionSlam.addTrackedObject(trackedObject);
 
-        ArrayList<CloudPoint> points2 = new ArrayList<>();
-        points2.add(new CloudPoint(-1.0, -1.0));
-        points2.add(new CloudPoint(-2.0, -2.0));
+    // Verify that the object was processed and converted into a landmark
+    assertEquals(1, fusionSlam.getLandmarks().size(), "One landmark should be added.");
+    assertEquals("Object1", fusionSlam.getLandmarks().get(0).getId(), "Landmark ID should match the tracked object ID.");
+}
+@Test
+public void testAddPoseWithoutMatchingTrackedObject() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(2);
 
-        trackedObjects.add(new TrackedObject("obj1", 0, "description1", points1));
-        trackedObjects.add(new TrackedObject("obj2", 0, "description2", points2));
-    }
+    // Create a pose
+    Pose pose = new Pose(5.0f, 5.0f, 90.0f, 1);
 
-    @Test
-    public void testAddOrChangeLM_NewLandmarks() {
-        // בודק אם הפונקציה יוצרת נכון Landmarks עבור אובייקטים חדשים
-        ArrayList<LandMark> landmarks = fusionSlam.addOrChangeLM(trackedObjects, pose);
+    // Add the pose
+    fusionSlam.addPose(pose);
 
-        assertEquals(2, landmarks.size());
-        LandMark lm1 = landmarks.get(0);
-        LandMark lm2 = landmarks.get(1);
+    // Verify that the pose is in the waiting list
+    assertEquals(1, fusionSlam.getWaitingPoses().size(), "Pose should be added to the waiting list.");
+}
 
-        assertEquals("obj1", lm1.getId());
-        assertEquals("obj2", lm2.getId());
-        assertEquals("description1", lm1.getDescripiot());
-        assertEquals("description2", lm2.getDescripiot());
-    }
+@Test
+public void testSearchLandmark() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(2);
+    ArrayList<CloudPoint> a = new ArrayList<>();
+    CloudPoint c = new CloudPoint(0.1, 0.1);
+    a.add(c);
 
-    @Test
-    public void testAddOrChangeLM_UpdateExistingLandmarks() {
-        // הוספה ראשונה
-        fusionSlam.addOrChangeLM(trackedObjects, pose);
+    // Create and add a landmark
+    LandMark landmark = new LandMark("Object1", "Description",a);
+    fusionSlam.getLandmarks().add(landmark);
 
-        // יצירת קורדינטות חדשות לעדכון
-        ArrayList<CloudPoint> newPoints = new ArrayList<>();
-        newPoints.add(new CloudPoint(3.0, 3.0));
+    // Search for the landmark
+    LandMark result = fusionSlam.searchLandMark("Object1");
 
-        ArrayList<TrackedObject> updatedObjects = new ArrayList<>();
-        updatedObjects.add(new TrackedObject("obj1", 0, "description1", newPoints));
+    // Verify the search result
+    assertNotNull(result, "Landmark should be found.");
+    assertEquals("Object1", result.getId(), "Landmark ID should match.");
+}
 
-        // עדכון
-        ArrayList<LandMark> updatedLandmarks = fusionSlam.addOrChangeLM(updatedObjects, pose);
 
-        assertEquals(1, updatedLandmarks.size());
-        LandMark updatedLandmark = updatedLandmarks.get(0);
+@Test
+public void testAddOrChangeLM_UpdateExistingLandmarks() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(2);
+    ArrayList<CloudPoint> a = new ArrayList<>();
+    CloudPoint c = new CloudPoint(0.1, 0.1);
+    a.add(c);
 
-        assertEquals("obj1", updatedLandmark.getId());
-        assertEquals(2.0, updatedLandmark.getCoordinates().get(0).getX());
-        assertEquals(2.0, updatedLandmark.getCoordinates().get(0).getY());
-    }
+    // Create an existing LandMark
+    LandMark existingLandMark = new LandMark("Object1", "Wall Description", a);
+    fusionSlam.getLandmarks().add(existingLandMark);
 
-    @Test
-    public void testAddOrChangeLM_WithTransformedCoordinates() {
-        // שימוש בפוז עם YAW לצורך בדיקת טרנספורמציה
-        Pose transformedPose = new Pose(1.0f, 1.0f, 90.0f, 0);
+    // Create a new TrackedObject for the same LandMark ID
+    ArrayList<CloudPoint> b = new ArrayList<>();
+    CloudPoint d = new CloudPoint(3.0, 3.0);
+    CloudPoint e = new CloudPoint(4.0, 4.0);
+    b.add(d);
+    b.add(e);
+    TrackedObject trackedObject = new TrackedObject("Object1", 1,1, "Updated Wall",b);
 
-        ArrayList<LandMark> landmarks = fusionSlam.addOrChangeLM(trackedObjects, transformedPose);
+    // Process the object
+    fusionSlam.addTrackedObject(trackedObject);
 
-        assertEquals(2, landmarks.size());
-        CloudPoint transformedPoint = landmarks.get(0).getCoordinates().get(0);
+    // Verify that the LandMark was updated
+    LandMark updatedLandMark = fusionSlam.searchLandMark("Object1");
+    assertNotNull(updatedLandMark, "LandMark should exist.");
+    assertEquals(4, updatedLandMark.getCoordinates().size(), "LandMark should have combined coordinates.");
+}
 
-        // בדיקה אם הקורדינטות עברו טרנספורמציה נכון
-        assertEquals(0.0, transformedPoint.getX(), 0.01);
-        assertEquals(2.0, transformedPoint.getY(), 0.01);
-    }
+@Test
+public void testAddOrChangeLM_WithTransformedCoordinates() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(2);
 
-    @Test
-    public void testAddOrChangeLM_DifferentLengthCoordinates() {
-        // יצירת רשימה ראשונה (ארוכה יותר)
-        ArrayList<CloudPoint> initialPoints = new ArrayList<>();
-        initialPoints.add(new CloudPoint(1.0, 1.0));
-        initialPoints.add(new CloudPoint(2.0, 2.0));
-        initialPoints.add(new CloudPoint(3.0, 3.0)); // נקודה נוספת
+    // Create a pose
+    Pose pose = new Pose(5.0f, 5.0f, 90.0f, 1);
+    fusionSlam.addPose(pose);
+    
 
-        // יצירת רשימה שנייה (קצרה יותר)
-        ArrayList<CloudPoint> newPoints = new ArrayList<>();
-        newPoints.add(new CloudPoint(4.0, 4.0));
-        newPoints.add(new CloudPoint(5.0, 5.0));
+    // Create a TrackedObject
+    ArrayList<CloudPoint> a = new ArrayList<>();
+    CloudPoint c = new CloudPoint(0.1, 0.1);
+    a.add(c);
+    TrackedObject trackedObject = new TrackedObject("Object2", 1,1, "Rotated Object",a);
 
-        // יצירת TrackedObject
-        ArrayList<TrackedObject> trackedObjects = new ArrayList<>();
-        trackedObjects.add(new TrackedObject("obj1", 0, "description1", initialPoints));
+    // Process the object
+    fusionSlam.addTrackedObject(trackedObject);
 
-        // הוספה ראשונית
-        fusionSlam.addOrChangeLM(trackedObjects, pose);
+    // Verify that the LandMark coordinates are transformed correctly
+    LandMark landMark = fusionSlam.searchLandMark("Object2");
+    assertNotNull(landMark, "LandMark should exist.");
+    List<CloudPoint> globalCoordinates = landMark.getCoordinates();
 
-        // יצירת TrackedObject עם רשימה קצרה יותר לעדכון
-        ArrayList<TrackedObject> updatedObjects = new ArrayList<>();
-        updatedObjects.add(new TrackedObject("obj1", 0, "description1", newPoints));
+    // Check transformed coordinates
+    assertEquals(5.0, globalCoordinates.get(0).getX(), 0.001, "Transformed X should match.");
+    assertEquals(6.0, globalCoordinates.get(0).getY(), 0.001, "Transformed Y should match.");
+    assertEquals(4.0, globalCoordinates.get(1).getX(), 0.001, "Transformed X should match.");
+    assertEquals(5.0, globalCoordinates.get(1).getY(), 0.001, "Transformed Y should match.");
+}
+@Test
+public void testAddOrChangeLM_DifferentLengthCoordinates() {
+    FusionSlam fusionSlam = FusionSlam.getInstance(2);
 
-        // עדכון
-        ArrayList<LandMark> updatedLandmarks = fusionSlam.addOrChangeLM(updatedObjects, pose);
+    // Create an existing LandMark with fewer coordinates
+    ArrayList<CloudPoint> a = new ArrayList<>();
+    CloudPoint c = new CloudPoint(0.1, 0.1);
+    a.add(c);
 
-        // בדיקה
-        assertEquals(1, updatedLandmarks.size());
-        LandMark updatedLandmark = updatedLandmarks.get(0);
+    LandMark existingLandMark = new LandMark("Object3", "Short List",a);
+    fusionSlam.getLandmarks().add(existingLandMark);
 
-        // בדיקת נקודות מעודכנות
-        assertEquals(3, updatedLandmark.getCoordinates().size()); // אורך הרשימה נשאר 3
+    // Create a TrackedObject with more coordinates
+    TrackedObject trackedObject = new TrackedObject("Object3", 1,1, "Long List",a);
 
-        // ממוצע של נקודות משותפות
-        CloudPoint averagedPoint1 = updatedLandmark.getCoordinates().get(0);
-        assertEquals(2.5, averagedPoint1.getX());
-        assertEquals(2.5, averagedPoint1.getY());
+    // Process the object
+    fusionSlam.addTrackedObject(trackedObject);
 
-        CloudPoint averagedPoint2 = updatedLandmark.getCoordinates().get(1);
-        assertEquals(3.5, averagedPoint2.getX());
-        assertEquals(3.5, averagedPoint2.getY());
+    // Verify that the LandMark coordinates include all new points
+    LandMark updatedLandMark = fusionSlam.searchLandMark("Object3");
+    assertNotNull(updatedLandMark, "LandMark should exist.");
+    assertEquals(3, updatedLandMark.getCoordinates().size(), "LandMark should contain all new and existing coordinates.");
+}
 
-        // הנקודה השלישית נשארת כפי שהיא
-        CloudPoint unchangedPoint = updatedLandmark.getCoordinates().get(2);
-        assertEquals(3.0, unchangedPoint.getX());
-        assertEquals(3.0, unchangedPoint.getY());
-    }
 }

@@ -63,4 +63,8 @@ public class LandMark {
     public String getDescription() {
         return description;
     }
+
+    public List<CloudPoint> getCoordinates(){
+        return coordinates;
+    }
 }

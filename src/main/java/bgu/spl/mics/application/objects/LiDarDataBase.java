@@ -89,13 +89,7 @@ public class LiDarDataBase {
         for (StampedCloudPoints point : cloudPoints) {
             if (point.getTime() == time && point.getId().equals(id)) {
                 // Incremante the counter by 1 (using cas to sync):
-                for(;;){
-                    int current = counter.get();
-                    int plusOne = current + 1;
-                    if (counter.compareAndSet(current, plusOne)){
-                        break;
-                    }
-                }
+                counter.incrementAndGet();
                 return point;
             }
         }
@@ -108,4 +102,9 @@ public class LiDarDataBase {
     public boolean isFinished(){
         return counter.get() > getLastTime();
     }
+
+    public static void resetInstance() {
+        instance = null;
+    }
+    
 }

@@ -161,5 +161,11 @@ public class FusionSlam {
     public ArrayList<LandMark> getLandmarks(){
         return landmarks;
     }
+
+    //getters for test
+
+    public List<Pose> getWaitingPoses(){
+        return waitingPoses;
+    }
     
 }
