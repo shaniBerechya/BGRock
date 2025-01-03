@@ -70,8 +70,8 @@ public class FusionSlamService extends MicroService {
                 sendBroadcast(terminatedBrodcast);
             }
             else if (TerminatedBrodcast.getSender() != "fusion"){
-                System.out.println("counterOfSensores: " + counterOfSensores);
-                subtractOne(); 
+                System.out.println("counterOfSensores: " + counterOfSensores +" terminet by: "+ TerminatedBrodcast.getSender());
+                counterOfSensores.decrementAndGet();
                 if(counterOfSensores.get() == 0){
                     TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("fusion");
                     sendBroadcast(terminatedBrodcast);

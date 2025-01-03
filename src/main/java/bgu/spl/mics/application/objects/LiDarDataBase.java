@@ -42,7 +42,7 @@ public class LiDarDataBase {
     /********************************************* Constrector ***************************************************/
     private LiDarDataBase(String filePath) {
         cloudPoints = new ArrayList<>();
-        counter = new AtomicInteger(0);
+        counter = new AtomicInteger(1);
         loadCloudPointsFromFile(filePath);
     }
 
@@ -103,8 +103,8 @@ public class LiDarDataBase {
         return counter.get() > getLastTime();
     }
     public boolean isFinished() {
-        boolean finished = counter.get() >= cloudPoints.get(cloudPoints.size()-1).getTime();
-        System.out.println("isFinished: " + finished + ", Counter: " + counter.get() + ", Size: ");
+        System.out.println("isFinished method: counter: " + counter.get() + " cloudPoints.size(): " + cloudPoints.size());
+        boolean finished = counter.get() >= cloudPoints.size();
         return finished;
     }
 

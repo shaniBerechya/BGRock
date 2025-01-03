@@ -1,6 +1,9 @@
 package bgu.spl.mics.application.objects;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.net.ssl.SSLEngineResult.Status;
 
@@ -13,7 +16,7 @@ public class LiDarWorkerTracker {
     //Fileds:
     int id;
     int frequency;
-    List<TrackedObject> lastTrackedObject;
+    BlockingQueue<TrackedObject> lastTrackedObject;
     private STATUS status;
     private LiDarDataBase dataBase;
 
@@ -27,7 +30,7 @@ public class LiDarWorkerTracker {
         public LiDarWorkerTracker(int id, int frequency, String dataBaseFilePath) {
         this.id = id;
         this.frequency = frequency;
-        this.lastTrackedObject = new ArrayList<>();
+        this.lastTrackedObject = new LinkedBlockingQueue<>();
         this.status = STATUS.UP;
         this.dataBase = LiDarDataBase.getInstance(dataBaseFilePath); // Load the singleton database
     }
@@ -45,14 +48,15 @@ public class LiDarWorkerTracker {
         if(stampedCoordinates != null){
             List<CloudPoint> coordinates = stampedCoordinates.getCloudPoints();
             TrackedObject trackedObject  = new TrackedObject(id, currentTime,timeDetected, description,coordinates);
-            lastTrackedObject.add(trackedObject);
+            try{
+                lastTrackedObject.put(trackedObject);
+            }
+            catch(InterruptedException e){}
         }
         else {
             status = STATUS.ERROR;
         }
     }
-
-
     /**
     * @return the {@code frequency}
     */
@@ -68,26 +72,23 @@ public class LiDarWorkerTracker {
      * @return the {@code TrackedObject} corresponding to the calculated time, or {@code null} if no match is found.
      */
     public TrackedObject getTrackedObjects (int time){
+        System.out.println("isFinished: " + dataBase.isFinished() + ", Counter: "  + ", Size list of lastTrackedObject: " + lastTrackedObject.size() );
         if(dataBase.isFinished() && lastTrackedObject.isEmpty()){
+            System.err.println("lidar is reday to terminet");
             status = STATUS.DOWN;
             return null;
         }
         else {
-            if ( !lastTrackedObject.isEmpty() && lastTrackedObject.get(0).getTime() <= time - frequency){
-                if(lastTrackedObject.get(0) == null){
-                    this.status = STATUS.ERROR;
-                    return null;
-                }
-                TrackedObject trackedObject = lastTrackedObject.get(0);
-                lastTrackedObject.remove(0);
+            TrackedObject trackedObject = lastTrackedObject.poll();
+            if (trackedObject != null  && trackedObject.getTime() <= time - frequency){
                 return trackedObject;
             }
         }
         return null;
     }
     public boolean isPossibleToTreack(int time){
-        return status == STATUS.UP && (!lastTrackedObject.isEmpty()) &&
-        (lastTrackedObject.get(0).getTime() <= time - frequency);
+        return status.equals(STATUS.UP) && (!lastTrackedObject.isEmpty()) &&
+        (lastTrackedObject.peek().getTime() <= time - frequency);
     }
 
     public STATUS geStatus(){

@@ -101,20 +101,21 @@ public void sendBroadcast(Broadcast b) {
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
 		LinkedList<MicroService> q = eventSub.get(e.getClass()); //Getting the all the micro servers that subscribed to this type of event
-		if (q == null || q.isEmpty()) 
-			return null;
-		MicroService m = null;
-		System.out.println("sending event: " + e.toString());
-		m = q.poll(); //chossing the first micro server
-		q.add(m);//put it in the end to maintain round robbin 		
-		Future<T> future = new Future<>(); 
-		synchronized(m){ 
-			eventToFuture.putIfAbsent(e, future); // linking the futer and the event 
-			messageQueue.get(m).add(e); // add the event to the meessege queue of micro servers
-			m.notifyAll(); //notify for the awaitMessage method
+		synchronized(q){
+				if (q == null || q.isEmpty()) 
+				return null;
+			MicroService m = null;
+			System.out.println("sending event: " + e.toString());
+			m = q.poll(); //chossing the first micro server
+			q.add(m);//put it in the end to maintain round robbin 		
+			Future<T> future = new Future<>(); 
+			synchronized(m){ 
+				eventToFuture.putIfAbsent(e, future); // linking the futer and the event 
+				messageQueue.get(m).add(e); // add the event to the meessege queue of micro servers
+				m.notifyAll(); //notify for the awaitMessage method
+			}
+			return future;
 		}
-		return future;
-	
 }
 
 	@Override
