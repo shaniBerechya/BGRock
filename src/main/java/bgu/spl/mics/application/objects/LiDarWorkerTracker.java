@@ -86,7 +86,6 @@ public class LiDarWorkerTracker {
         return null;
     }
     public boolean isPossibleToTreack(int time){
-        //System.out.println("*******isPossibleToTreack: status: " + status +  );
         return status == STATUS.UP && (!lastTrackedObject.isEmpty()) &&
         (lastTrackedObject.get(0).getTime() <= time - frequency);
     }

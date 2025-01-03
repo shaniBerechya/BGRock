@@ -43,6 +43,9 @@ public class StampedDetectedObjects {
         return time;
     }
     public String erorDescripion(){
+        if(detectedObjects == null){
+            return null;
+        }
         for(DetectedObject object : detectedObjects){
             String id =  object.getId();
             if(id.equals("ERROR")) {

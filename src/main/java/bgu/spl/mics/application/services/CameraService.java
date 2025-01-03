@@ -55,7 +55,7 @@ public class CameraService extends MicroService {
             StampedDetectedObjects detectedObjects = null;
 
             //Chack for eror:
-            if(camera.getStatus() == STATUS.ERROR){
+            if(camera.erorDescripion(clock) != null){
                 statisticalFolder.setErrorDescription(camera.erorDescripion(clock));
                 statisticalFolder.setFaultySensor(this);
                 CrashedBrodcast crashedBrodcast = new CrashedBrodcast();
@@ -72,6 +72,11 @@ public class CameraService extends MicroService {
     
                     //Update the StatisticalFolder:
                     statisticalFolder.updateForCamera(getName(), detectedObjects);
+                }
+                else if (camera.getStatus().equals(STATUS.ERROR)){
+                    System.out.println(getName() + " has stopd");
+                    TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("camera");
+                    sendBroadcast(terminatedBrodcast);
                 }
             }
 

@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.services;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBrodcast;
 import bgu.spl.mics.application.messages.PoseEvent;
@@ -21,7 +23,7 @@ import bgu.spl.mics.application.objects.TrackedObject;
 public class FusionSlamService extends MicroService {
     //Fildes:
     FusionSlam fusionSlam;
-    int counterOfSensores;
+    AtomicInteger counterOfSensores;
     private final StatisticalFolder statisticalFolder;
 
 
@@ -33,7 +35,7 @@ public class FusionSlamService extends MicroService {
     public FusionSlamService(FusionSlam fusionSlam) {
         super("fusionSlam");
         this.fusionSlam = fusionSlam;
-        counterOfSensores = fusionSlam.getNumOfSensore();
+        counterOfSensores = new AtomicInteger(fusionSlam.getNumOfSensore());
         statisticalFolder = StatisticalFolder.getInstance();
     }
 
@@ -69,8 +71,8 @@ public class FusionSlamService extends MicroService {
             }
             else if (TerminatedBrodcast.getSender() != "fusion"){
                 System.out.println("counterOfSensores: " + counterOfSensores);
-                counterOfSensores = counterOfSensores -1; 
-                if(counterOfSensores == 0){
+                subtractOne(); 
+                if(counterOfSensores.get() == 0){
                     TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("fusion");
                     sendBroadcast(terminatedBrodcast);
                 }
@@ -89,4 +91,15 @@ public class FusionSlamService extends MicroService {
         // Log initialization
         System.out.println(getName() + " initialized.");
     }
+    //metohd to hendl AtomicInteger
+    private void subtractOne() {
+        for(;;){
+            int current = counterOfSensores.get();
+            int plusOne = current - 1;
+            if (counterOfSensores.compareAndSet(current, plusOne)){
+                break;
+            }
+        }
+    }
+
 }

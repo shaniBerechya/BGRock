@@ -55,7 +55,6 @@ public class LiDarService extends MicroService {
 
             // Check if it is possible to track objects at the current time
             while (liDarWorkerTracker.isPossibleToTreack(clock)) {
-                System.out.println("is lider rechad to this pint???");
                 TrackedObject trackedObject = liDarWorkerTracker.getTrackedObjects(clock);
 
                 if (trackedObject != null) {
@@ -68,14 +67,11 @@ public class LiDarService extends MicroService {
             }
 
             // Handle LiDAR status
-            switch (liDarWorkerTracker.geStatus()) {
-                case DOWN:
-                    TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("lidar");
-                    sendBroadcast(terminatedBrodcast);
-                    terminate();
-                    break;
-                default:
-                    break;
+            if(liDarWorkerTracker.geStatus() == STATUS.DOWN){
+                System.out.println(getName() + " has stopd");
+                TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("lidar");
+                sendBroadcast(terminatedBrodcast);
+                terminate();
             }
         });
 
@@ -85,6 +81,8 @@ public class LiDarService extends MicroService {
             int timeDetected = stampedDetectedObjects.getTime();
             for (DetectedObject object : stampedDetectedObjects.getDetectedObjects()){
                 liDarWorkerTracker.addTrackedObjects(timeDetected, object.getId(), object.getDescription(), clock);
+                
+                //Hendles the case of an eror:
                 if(liDarWorkerTracker.geStatus() == STATUS.ERROR){
                     statisticalFolder.setFaultySensor(this);
                     CrashedBrodcast crashedBrodcast = new CrashedBrodcast();

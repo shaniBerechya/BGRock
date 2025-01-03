@@ -53,9 +53,9 @@ public class GurionRockRunner {
         int tickTime = 0;
         int duration = 0;
 
+        //read from json:
         try {
             basePath = new File(configFile).getParent(); //the path to the input folder
-            System.out.println(basePath);
             // Read the configuration file
             Gson gson = new Gson();
             JsonObject config = gson.fromJson(new FileReader(configFile), JsonObject.class);

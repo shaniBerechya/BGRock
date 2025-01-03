@@ -52,7 +52,7 @@ public class StatisticalFolder {
 
     private StatisticalFolder(){
         
-        systemRuntime = new AtomicInteger(0);
+        systemRuntime = new AtomicInteger(1);
         numDetectedObjects = new AtomicInteger(0);
         numTrackedObjects = new AtomicInteger(0);
         numLandmarks = 0;

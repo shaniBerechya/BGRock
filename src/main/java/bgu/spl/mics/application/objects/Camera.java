@@ -141,8 +141,8 @@ public class Camera {
     }
 
     public String erorDescripion(int time){
-        StampedDetectedObjects s = detectedObjectList.get(time-1);
-        if (s.erorDescripion() != null){
+        StampedDetectedObjects s = findByTime(time);
+        if (s != null && s.erorDescripion() != null){
             this.status = STATUS.ERROR;
             return s.erorDescripion();
         }
