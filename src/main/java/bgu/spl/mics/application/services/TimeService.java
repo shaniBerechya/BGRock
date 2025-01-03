@@ -4,6 +4,7 @@ import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBrodcast;
 import bgu.spl.mics.application.messages.TerminatedBrodcast;
 import bgu.spl.mics.application.messages.TickBrodcast;
+import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
  * TimeService acts as the global timer for the system, broadcasting TickBroadcast messages
@@ -14,6 +15,8 @@ public class TimeService extends MicroService {
     private final int tickTime; // Duration of each tick in milliseconds
     private final int duration; // Total number of ticks
     private int currentTick; // The current tick count
+    StatisticalFolder statisticalFolder;
+
 
     /**
      * Constructor for TimeService.
@@ -26,6 +29,7 @@ public class TimeService extends MicroService {
         this.tickTime = tickTime;
         this.duration = duration;
         this.currentTick = 1; //the time of the system start at 1
+        statisticalFolder = StatisticalFolder.getInstance();
     }
 
     /**
@@ -41,13 +45,16 @@ public class TimeService extends MicroService {
 
             currentTick = currentTick + 1 ;
             if (currentTick <= duration){
+                statisticalFolder.addOneSystemRuntime();
                 TickBrodcast tickBrodcast = new TickBrodcast(currentTick);
                 sendBroadcast(tickBrodcast);
             }
             else{
+                System.out.println("time reched to 30 and redy to terminate");
                 TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("time");
                 sendBroadcast(terminatedBrodcast);
             }
+            
             
         });
 

@@ -90,10 +90,6 @@ public class Camera {
         }
     }
     
-    
-    
-    
-    
     /**
     * @return the {@code frequency}
     */
@@ -109,13 +105,23 @@ public class Camera {
     */
     public StampedDetectedObjects getDetectedObject(int time){
         StampedDetectedObjects stampedDetectedObjects = null;
-        if(getLastTime()  + frequency < time){
+        if(getLastTime()  + frequency - 1 < time){//not sure if we need -1
             status = STATUS.DOWN;
        }
-       else  if(detectedObjectList.get(time-frequency-1).getDetectedObjects() != null){
-            stampedDetectedObjects = detectedObjectList.get(time-frequency-1);
+       else  if(findByTime(time - frequency) != null 
+       && findByTime(time - frequency).getDetectedObjects() != null){ // we need the second check becuse the input files are no good
+            stampedDetectedObjects = findByTime(time - frequency);
        }
        return stampedDetectedObjects;
+    }
+
+    private StampedDetectedObjects findByTime(int time){
+        for(StampedDetectedObjects objects: detectedObjectList){
+            if(objects.getTime() == time){
+                return objects;
+            }
+        }
+        return null;
     }
 
     public int getLastTime(){

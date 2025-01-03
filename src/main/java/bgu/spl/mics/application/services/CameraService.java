@@ -63,7 +63,7 @@ public class CameraService extends MicroService {
                 terminate();
             }
             // Get detected objects for the current time     
-            else if(clock < camera.getFrequency()){
+            else if(clock > camera.getFrequency()){
                 detectedObjects = camera.getDetectedObject(clock);
                 if (detectedObjects != null) {
                     // Create a DetectObjectsEvent and send it

@@ -73,7 +73,7 @@ public class LiDarWorkerTracker {
             return null;
         }
         else {
-            if ( lastTrackedObject.get(0).getTime() == time - frequency){
+            if ( lastTrackedObject.get(0).getTime() <= time - frequency){
                 if(lastTrackedObject.get(0) == null){
                     this.status = STATUS.ERROR;
                     return null;
@@ -86,7 +86,9 @@ public class LiDarWorkerTracker {
         return null;
     }
     public boolean isPossibleToTreack(int time){
-        return status == STATUS.UP &&(lastTrackedObject.get(0).getTime() == time - frequency);
+        //System.out.println("*******isPossibleToTreack: status: " + status +  );
+        return status == STATUS.UP && (!lastTrackedObject.isEmpty()) &&
+        (lastTrackedObject.get(0).getTime() <= time - frequency);
     }
 
     public STATUS geStatus(){
