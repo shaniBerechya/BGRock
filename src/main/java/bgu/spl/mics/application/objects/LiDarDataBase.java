@@ -99,8 +99,13 @@ public class LiDarDataBase {
         return cloudPoints.get(cloudPoints.size()-1).getTime();
     }
 
-    public boolean isFinished(){
+    public boolean isFinished1(){
         return counter.get() > getLastTime();
+    }
+    public boolean isFinished() {
+        boolean finished = counter.get() >= cloudPoints.get(cloudPoints.size()-1).getTime();
+        System.out.println("isFinished: " + finished + ", Counter: " + counter.get() + ", Size: ");
+        return finished;
     }
 
     public static void resetInstance() {
