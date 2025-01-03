@@ -95,18 +95,11 @@ public class LiDarDataBase {
         }
         return null; // No matching point found witch mean there is error
     }
-    public int getLastTime(){ //need to fix
-        return cloudPoints.get(cloudPoints.size()-1).getTime();
-    }
 
-    public boolean isFinished1(){
-        return counter.get() > getLastTime();
+    public boolean isFinished(){
+        return counter.get() == cloudPoints.size();
     }
-    public boolean isFinished() {
-        System.out.println("isFinished method: counter: " + counter.get() + " cloudPoints.size(): " + cloudPoints.size());
-        boolean finished = counter.get() >= cloudPoints.size();
-        return finished;
-    }
+    
 
     public static void resetInstance() {
         instance = null;

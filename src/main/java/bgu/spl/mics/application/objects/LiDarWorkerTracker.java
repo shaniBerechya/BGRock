@@ -72,7 +72,7 @@ public class LiDarWorkerTracker {
      * @return the {@code TrackedObject} corresponding to the calculated time, or {@code null} if no match is found.
      */
     public TrackedObject getTrackedObjects (int time){
-        System.out.println("isFinished: " + dataBase.isFinished() + ", Counter: "  + ", Size list of lastTrackedObject: " + lastTrackedObject.size() );
+        System.out.println("dataBase.isFinished() " + dataBase.isFinished() + "lastTrackedObject: "+lastTrackedObject.size());
         if(dataBase.isFinished() && lastTrackedObject.isEmpty()){
             System.err.println("lidar is reday to terminet");
             status = STATUS.DOWN;
@@ -97,5 +97,9 @@ public class LiDarWorkerTracker {
 
     public int getID(){
         return this.id;
+    }
+
+    public BlockingQueue<TrackedObject> getLastTrackedObject(){
+        return lastTrackedObject;
     }
 }

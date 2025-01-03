@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,4 +61,32 @@ public class LiDarTest {
     System.out.println("Worker status: " + workerTracker1.geStatus());
     assertEquals(STATUS.DOWN, status, "Status should be set to ERROR when no matching data is found.");
     }
+
+    @Test
+public void testGetTrackedObjectsProcessesLastObject() {
+    // Reset the database to ensure a clean state
+    LiDarDataBase.resetInstance();
+
+    // Initialize LiDarWorkerTracker and LiDarService
+    LiDarWorkerTracker workerTracker = new LiDarWorkerTracker(1, 4, "./example_input_2/lidar_data.json");
+
+    // Simulate adding objects
+    workerTracker.addTrackedObjects(1, "Wall_2", "Wall", 1);
+    workerTracker.addTrackedObjects(2, "Wall_1", "Wall", 2);
+
+    // Process objects until the last one
+    workerTracker.getTrackedObjects(1); // Process first object
+    workerTracker.getTrackedObjects(2); // Process second object
+    workerTracker.getTrackedObjects(3); 
+    workerTracker.getTrackedObjects(4); 
+    workerTracker.getTrackedObjects(5); 
+    workerTracker.getTrackedObjects(6); 
+
+
+    // Assert that lastTrackedObject is empty
+    assertTrue(workerTracker.getLastTrackedObject().isEmpty(),
+            "lastTrackedObject should be empty after processing the last object.");
+
+}
+
 }
