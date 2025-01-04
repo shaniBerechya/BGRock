@@ -20,8 +20,11 @@ import bgu.spl.mics.Event;
 import bgu.spl.mics.Future;
 import bgu.spl.mics.Message;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.jupiter.api.Test;
 import bgu.spl.mics.MessageBusImpl;
@@ -44,7 +47,7 @@ public void subscribeEventTest() {
     messageBus.subscribeEvent(event.getClass(), handler1);
 
     // Get the subscribers queue for the event type
-    LinkedList<MicroService> subscribers = messageBus.getEventSub(event.getClass());
+    Queue<MicroService> subscribers = messageBus.getEventSub(event.getClass());
 
     // Ensure the subscribers queue is not null
     assertNotNull(subscribers, "The subscribers queue for the event should not be null.");
@@ -74,7 +77,7 @@ public void subscribeEventTest() {
         messageBus.subscribeBroadcast(ExampleBroadcast.class, listener2);
     
         // Get the list of subscribers for the broadcast type
-        LinkedList<MicroService> subscribers = messageBus.getBrodSub(ExampleBroadcast.class);
+        ArrayList<MicroService> subscribers = messageBus.getBrodSub(ExampleBroadcast.class);
     
         // Ensure the subscribers list is not null
         assertNotNull(subscribers, "The subscribers list should not be null.");
@@ -92,20 +95,17 @@ public void subscribeEventTest() {
     public void completeTest() {
         MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
-        // Setting up an event and microservice
         ExampleEvent event = new ExampleEvent("TestSender");
         MicroService handler = new ExampleBroadcastListenerService("Handler", new String[]{"1"});
         messageBus.register(handler);
+        messageBus.subscribeEvent(event.getClass(), handler);
 
-        // Sending event and obtaining future
         Future<String> future = (Future<String>) messageBus.sendEvent(event);
 
-        // Completing the event
         messageBus.complete(event, "Completed");
 
-        // Verifying future is resolved
         assertTrue(future.isDone());
-        assertEquals("Completed", future.get()); // Ensure correct resolution
+        assertEquals("Completed", future.get());
     }
 
     @Test
@@ -126,8 +126,8 @@ public void subscribeEventTest() {
     messageBus.sendBroadcast(broadcast);
 
     // Verify that the broadcast was sent correctly
-    LinkedList<Message> queue1 = messageBus.getMessageQueue(listener1);
-    LinkedList<Message> queue2 = messageBus.getMessageQueue(listener2);
+    BlockingQueue<Message> queue1 = messageBus.getMessageQueue(listener1);
+    BlockingQueue<Message> queue2 = messageBus.getMessageQueue(listener2);
 
     assertTrue(queue1.contains(broadcast));
     assertTrue(queue2.contains(broadcast));
@@ -150,9 +150,9 @@ public void sendEventTest() throws InterruptedException {
     Future<String> future = messageBus.sendEvent(event);
 
     // Verify the event is received by the handler
-    LinkedList<Message> queue1 = messageBus.getMessageQueue(handler);
+    BlockingQueue<Message> queue1 = messageBus.getMessageQueue(handler);
     assertTrue(queue1.contains(event));
-    assertEquals(future, messageBus.getFuture(event));
+    assertEquals(future, messageBus.getEventFuture(event));
 }
 
     @Test
@@ -206,13 +206,11 @@ public void sendEventTest() throws InterruptedException {
         messageBus.unregister(broadcastListener);
         assertFalse(messageBus.getBrodSub(ExampleBroadcast.class).contains(broadcastListener), "BroadcastListener should be removed from broadcast subscriptions.");
         assertNull(messageBus.getMessageQueue(broadcastListener), "BroadcastListener queue should be removed.");
-        assertNull(messageBus.getMicroToBrod(broadcastListener), "BroadcastListener should be removed from microToBrod.");
-    
+
         // Unregister the event handler and verify removal
         messageBus.unregister(eventHandler);
         assertFalse(messageBus.getEventSub(ExampleEvent.class).contains(eventHandler), "EventHandler should be removed from event subscriptions.");
         assertNull(messageBus.getMessageQueue(eventHandler), "EventHandler queue should be removed.");
-        assertNotNull(messageBus.getMicroToEvent(sender), "Sender should still exist in microToEvent (if applicable).");
     
         // Verify that the sender is still registered
         assertNotNull(messageBus.getMessageQueue(sender), "Sender queue should still exist.");

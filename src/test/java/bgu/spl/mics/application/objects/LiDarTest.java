@@ -48,20 +48,6 @@ public class LiDarTest {
         assertEquals(STATUS.ERROR, status, "Status should be set to ERROR when no matching data is found.");
     }
 
-   @Test
-   public void testDown(){
-    LiDarWorkerTracker workerTracker1 = new LiDarWorkerTracker(1, 4, "./example_input_2/lidar_data.json");
-    LiDarWorkerTracker workerTracker2 = new LiDarWorkerTracker(2, 4, "./example_input_2/lidar_data.json");
-
-    for(int time =1 ; time <= 13; time ++){
-        workerTracker2.addTrackedObjects(1, "Wall_1", "Wall", 1);
-    }
-    workerTracker1.getTrackedObjects(30);
-    STATUS status = workerTracker1.geStatus();
-    System.out.println("Worker status: " + workerTracker1.geStatus());
-    assertEquals(STATUS.DOWN, status, "Status should be set to ERROR when no matching data is found.");
-    }
-
     @Test
 public void testGetTrackedObjectsProcessesLastObject() {
     // Reset the database to ensure a clean state

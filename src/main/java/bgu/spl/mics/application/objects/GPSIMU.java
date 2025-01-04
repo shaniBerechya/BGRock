@@ -84,7 +84,7 @@ public class GPSIMU {
      * @return the Pose at the given time or null if not found.
      */
     public Pose getPose() {
-        setTime(currentTick + 1);
+        setTime(currentTick);
         for (Pose pose : poseList) {
             if (pose.getTime() == currentTick) {
                 return pose;
