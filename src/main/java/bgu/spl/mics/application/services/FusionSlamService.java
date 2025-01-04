@@ -85,6 +85,7 @@ public class FusionSlamService extends MicroService {
 
         // Handle TerminatedBrodcast
         subscribeBroadcast(CrashedBrodcast.class, CrashedBrodcastnull -> {
+            statisticalFolder.setLandMarks(fusionSlam.getLandmarks());
             terminate();
         });
 

@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.objects;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public class StatisticalFolder {
     private MicroService faultySensor;
 
     private ConcurrentHashMap<String, StampedDetectedObjects> lastDetectedByCamera;
-    private ConcurrentHashMap<String, List<CloudPoint>> lastTrackedByLidar;
+    private ConcurrentHashMap<String, TrackedObject> lastTrackedByLidar;
     private ArrayList<Pose> poses;
 
 
@@ -123,6 +124,7 @@ public class StatisticalFolder {
     public void setFaultySensor(MicroService faultySensor) {
         if (!(faultySensor instanceof CameraService)) {
             this.errorDescription = "Sensor " + faultySensor.getName() + " disconnected";
+            isEror = true;
         }
         this.faultySensor = faultySensor;
         isEror = true;
@@ -136,7 +138,7 @@ public class StatisticalFolder {
 
     public void updateForLiDar(String liDarName, TrackedObject trackedObject){
         addOneNumTrackedObjects();;
-        lastTrackedByLidar.put(liDarName, trackedObject.getCoordinates());
+        lastTrackedByLidar.put(liDarName, trackedObject);
     }
 
     public void updateForGPS(Pose pose){
@@ -145,81 +147,46 @@ public class StatisticalFolder {
 
     //Other methods:
 
+    //Creating the finel json output
     public void exportToJson(String filePath) {
-        try {
-            Map<String, Object> output = new LinkedHashMap<>();
-    
-            if (isEror) {
-                // Case: Error occurred
-                output.put("error", errorDescription);
-                output.put("faultySensor", faultySensor);
-    
-                // Last detected by camera
-                Map<String, Object> lastCamerasFrame = new LinkedHashMap<>();
-                for (Map.Entry<String, StampedDetectedObjects> entry : lastDetectedByCamera.entrySet()) {
-                    Map<String, Object> cameraData = new LinkedHashMap<>();
-                    cameraData.put("time", entry.getValue().getTime());
-                    cameraData.put("detectedObjects", entry.getValue().getDetectedObjects());
-                    lastCamerasFrame.put(entry.getKey(), cameraData);
-                }
-                output.put("last Detected By Camera", lastCamerasFrame);
-    
-                // Last tracked by LiDar
-                Map<String, List<Map<String, Double>>> lastLiDarFrame = new LinkedHashMap<>();
-                for (Map.Entry<String, List<CloudPoint>> entry : lastTrackedByLidar.entrySet()) {
-                    List<Map<String, Double>> cloudPoints = new ArrayList<>();
-                    for (CloudPoint point : entry.getValue()) {
-                        Map<String, Double> coordinates = new LinkedHashMap<>();
-                        coordinates.put("x", point.getX());
-                        coordinates.put("y", point.getY());
-                        cloudPoints.add(coordinates);
-                    }
-                    lastLiDarFrame.put(entry.getKey(), cloudPoints);
-                }
-                output.put("last Tracked By Lidar", lastLiDarFrame);
-                //Add the poses
-                output.put("Poses", poses);
-    
-            } else {
-                // Case: No error, include full statistics
-                Map<String, Object> statistics = new LinkedHashMap<>();
-                statistics.put("systemRuntime", systemRuntime);
-                statistics.put("numDetectedObjects", numDetectedObjects);
-                statistics.put("numTrackedObjects", numTrackedObjects);
-                statistics.put("numLandmarks", numLandmarks);
-    
-                Map<String, Object> landmarks = new LinkedHashMap<>();
-                for (LandMark lm : landMarks) {
-                    Map<String, Object> landmarkData = new LinkedHashMap<>();
-                    landmarkData.put("id", lm.getId());
-                    landmarkData.put("description", lm.getDescription());
-                    List<Map<String, Double>> coordinatesList = new ArrayList<>();
-                    for (CloudPoint point : lm.getCoordinates()) {
-                        Map<String, Double> coordinates = new LinkedHashMap<>();
-                        coordinates.put("x", point.getX());
-                        coordinates.put("y", point.getY());
-                        coordinatesList.add(coordinates);
-                    }
-                    landmarkData.put("coordinates", coordinatesList);
-                    landmarks.put(lm.getId(), landmarkData);
-                }
-                statistics.put("landmarks", landmarks);
-                output.put("statistics", statistics);
-            }
-    
-            // Add poses in both cases
-            output.put("poses", poses);
-    
-            // Write JSON to file
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            try (FileWriter writer = new FileWriter(filePath)) {
-                gson.toJson(output, writer);
-            }
-    
-        } catch (IOException e) {
-            System.err.println("Error writing output to file: " + e.getMessage());
+        // Create a map to hold the data
+        Map<String, Object> data = new LinkedHashMap<>();
+         // If there was an error, add error details
+         if (isEror) {
+            Map<String, Object> errorDetails = new LinkedHashMap<>();
+            errorDetails.put("Error", errorDescription);
+            errorDetails.put("faultySensor", faultySensor.getName()); // this is the faultySensor itself and not the string
+            errorDetails.put("lastDetectedByCamera", lastDetectedByCamera);
+            errorDetails.put("lastTrackedByLidar", lastTrackedByLidar);
+            errorDetails.put("poses", poses);
+            data.put("errorDetails", errorDetails);
         }
-}
+    
+        // Add statistics
+        data.put("systemRuntime", systemRuntime.get());
+        data.put("numDetectedObjects", numDetectedObjects.get());
+        data.put("numTrackedObjects", numTrackedObjects.get());
+        data.put("numLandmarks", numLandmarks);
+    
+        // Add world map (landmarks)
+        data.put("landMarks", landMarks);
+    
+    
+        // Serialize the map to JSON
+        Gson gson = new Gson();
+        String json = gson.toJson(data);
+        // Manually add new lines where you want them
+        json = json.replace("},", "},\n"); // Adds a new line after each JSON object in the array
 
-
+    
+        // Write to file
+        String outputPath = filePath + "/output_file.json";
+        try (FileWriter writer = new FileWriter(outputPath)) {
+            writer.write(json);
+        } catch (IOException e) {
+            System.err.println("Error writing JSON to file: " + e.getMessage());
+        }
+        }
+    
+    
 }
