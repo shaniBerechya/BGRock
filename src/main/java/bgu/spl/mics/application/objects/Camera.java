@@ -1,27 +1,15 @@
 package bgu.spl.mics.application.objects;
-import java.io.File;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.SSLEngineResult.Status;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.List;
 
 
 /**
@@ -32,10 +20,8 @@ public class Camera {
     //Fileds:
     private int id;
     private int frequency;
-    private String cameraDatasPath;
     private STATUS status;
     private List<StampedDetectedObjects> detectedObjectList; 
-    private int index;
 
     /********************************************* Constrector ***************************************************/
     /**
@@ -48,13 +34,8 @@ public class Camera {
     public Camera(int id,int frequency,String cameraDatasPath){
         this.id = id;
         this.frequency = frequency;
-        this.cameraDatasPath = cameraDatasPath;
         this.status = STATUS.UP;
-
-        System.out.println("Loading detected objects...");
-        loadDetectedObjectsFromFile(cameraDatasPath, "camera"+id);
-        System.out.println("Camera initialization complete.");
-        
+        loadDetectedObjectsFromFile(cameraDatasPath, "camera"+id);        
     }
 
     /********************************************* Methods ***************************************************/
@@ -63,24 +44,19 @@ public class Camera {
     
     public void loadDetectedObjectsFromFile(String filePath, String cameraKey) {
         try (FileReader reader = new FileReader(filePath)) {
-            System.out.println("Attempting to load JSON from: " + filePath);
     
-            // שימוש ב-Gson לקריאת הקובץ
             Gson gson = new Gson();
             java.lang.reflect.Type type = new TypeToken<Map<String, List<StampedDetectedObjects>>>() {}.getType();
             Map<String, List<StampedDetectedObjects>> cameraData = gson.fromJson(reader, type);
     
-            // שליפת הנתונים עבור המצלמה המבוקשת
             List<StampedDetectedObjects> cameraObjects = cameraData.get(cameraKey);
     
-            // בדיקה אם יש נתונים
             if (cameraObjects != null) {
                 detectedObjectList = new ArrayList<>(cameraObjects);
             } else {
                 detectedObjectList = new ArrayList<>();
             }
     
-            System.out.println("Camera " + id + " loaded " + detectedObjectList.size() + " detected objects.");
         } catch (IOException e) {
             System.err.println("IOException occurred: " + e.getMessage());
             detectedObjectList = new ArrayList<>();

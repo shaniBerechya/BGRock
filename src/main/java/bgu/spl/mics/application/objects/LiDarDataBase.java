@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -48,7 +47,6 @@ public class LiDarDataBase {
 
     /********************************************* Methods ***************************************************/
     private void loadCloudPointsFromFile(String filePath) {
-    Gson gson = new Gson();
     try (FileReader reader = new FileReader(filePath)) {
         // Deserialize JSON into List of StampedCloudPoints
         JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();

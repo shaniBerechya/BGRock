@@ -73,7 +73,6 @@ public class PoseService extends MicroService {
             terminate();
         });
 
-        // Log initialization
-        System.out.println(getName() + " initialized.");
+        
     }
 }

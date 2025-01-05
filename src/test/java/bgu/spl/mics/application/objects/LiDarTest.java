@@ -1,23 +1,18 @@
 package bgu.spl.mics.application.objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import bgu.spl.mics.application.services.LiDarService;
+
 
 public class LiDarTest {
 
    
     @Test
     public void testLoadDataFromJson() {
-        LiDarWorkerTracker workerTracker = new LiDarWorkerTracker(1, 4, "./example_input_2/lidar_data.json");
         // Validate the data loaded from the LiDarDataBase
         LiDarDataBase database = LiDarDataBase.getInstance("./example_input_2/lidar_data.json");
         StampedCloudPoints stampedPoint = database.getStampedCloudPoints(1, "Wall_1");

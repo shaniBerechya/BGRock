@@ -9,12 +9,7 @@ import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
-import bgu.spl.mics.Broadcast;
-import bgu.spl.mics.Event;
-import bgu.spl.mics.MicroService;
-import bgu.spl.mics.application.messages.DetectObjectsEvent;
-import bgu.spl.mics.application.objects.Camera;
-import bgu.spl.mics.application.objects.StampedDetectedObjects;
+
 
 /**
  * CameraService is responsible for processing data from the camera and
@@ -74,7 +69,6 @@ public class CameraService extends MicroService {
                     statisticalFolder.updateForCamera(getName(), detectedObjects);
                 }
                 else if (camera.getStatus().equals(STATUS.ERROR)){
-                    System.out.println(getName() + " has stopd");
                     TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("camera");
                     sendBroadcast(terminatedBrodcast);
                 }
@@ -105,7 +99,6 @@ public class CameraService extends MicroService {
             terminate();
         });
 
-        // Log initialization
-        System.out.println(getName() + " initialized.");
+       
     }
 }

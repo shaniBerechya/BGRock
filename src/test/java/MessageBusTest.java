@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.fail;
 
-import java.beans.Transient;
+
 import bgu.spl.mics.example.messages.ExampleBroadcast;
 import bgu.spl.mics.example.messages.ExampleEvent;
 import bgu.spl.mics.example.services.ExampleBroadcastListenerService;
@@ -15,20 +13,17 @@ import bgu.spl.mics.example.services.ExampleEventHandlerService;
 import bgu.spl.mics.example.services.ExampleMessageSenderService;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
-import bgu.spl.mics.Broadcast;
-import bgu.spl.mics.Event;
+
 import bgu.spl.mics.Future;
 import bgu.spl.mics.Message;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 
 import org.junit.jupiter.api.Test;
-import bgu.spl.mics.MessageBusImpl;
-import bgu.spl.mics.example.messages.ExampleEvent;
+
 
 public class MessageBusTest {
     @Test
@@ -57,6 +52,8 @@ public void subscribeEventTest() {
 
     // Ensure the specific handler is in the subscribers queue
     assertTrue(subscribers.contains(handler1), "The subscribers queue should contain Handler1.");
+    
+    messageBus.unregister(handler1);
 }
 
 
@@ -88,6 +85,9 @@ public void subscribeEventTest() {
         // Ensure the specific handler is in the subscribers queue
         assertTrue(subscribers.contains(listener1), "The subscribers list should contain listener1.");
         assertTrue(subscribers.contains(listener2), "The subscribers list should contain listener2.");
+        
+        messageBus.unregister(listener2);
+        messageBus.unregister(listener1);
     }
     
 
@@ -106,6 +106,8 @@ public void subscribeEventTest() {
 
         assertTrue(future.isDone());
         assertEquals("Completed", future.get());
+        
+        messageBus.unregister(handler);
     }
 
     @Test
@@ -131,6 +133,9 @@ public void subscribeEventTest() {
 
     assertTrue(queue1.contains(broadcast));
     assertTrue(queue2.contains(broadcast));
+
+    messageBus.unregister(listener2);
+    messageBus.unregister(listener1);
 }
 
 
@@ -153,6 +158,8 @@ public void sendEventTest() throws InterruptedException {
     BlockingQueue<Message> queue1 = messageBus.getMessageQueue(handler);
     assertTrue(queue1.contains(event));
     assertEquals(future, messageBus.getEventFuture(event));
+    
+    messageBus.unregister(handler);
 }
 
     @Test
@@ -171,6 +178,8 @@ public void sendEventTest() throws InterruptedException {
 
         // Test registering multiple microservices and ensuring queue
         assertNotSame(messageBus.getMessageQueue(messageSender), messageBus.getMessageQueue(eventHandler));
+
+        messageBus.unregister(eventHandler);
     }
 
     @Test
@@ -198,10 +207,6 @@ public void sendEventTest() throws InterruptedException {
         ExampleBroadcast broadcast = new ExampleBroadcast("Sender");
         messageBus.sendBroadcast(broadcast);
     
-        // Send an ExampleEvent
-        ExampleEvent event = new ExampleEvent("Sender");
-        Future<String> future = messageBus.sendEvent(event);
-    
         // Unregister the broadcast listener and verify removal
         messageBus.unregister(broadcastListener);
         assertFalse(messageBus.getBrodSub(ExampleBroadcast.class).contains(broadcastListener), "BroadcastListener should be removed from broadcast subscriptions.");
@@ -214,6 +219,10 @@ public void sendEventTest() throws InterruptedException {
     
         // Verify that the sender is still registered
         assertNotNull(messageBus.getMessageQueue(sender), "Sender queue should still exist.");
+
+        messageBus.unregister(broadcastListener);
+        messageBus.unregister(eventHandler);
+        messageBus.unregister(sender);
     }
 
     @Test
@@ -226,6 +235,9 @@ public void sendEventTest() throws InterruptedException {
         messageBus.sendEvent(event);
         // The service should now have the event in its queue, retrieve it using awaitMessage
         assertEquals(event, messageBus.awaitMessage(eventHandler));
+        
+        messageBus.unregister(eventHandler);
+
     }
 
     

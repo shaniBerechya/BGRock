@@ -1,16 +1,11 @@
 package bgu.spl.mics.application;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
+import bgu.spl.mics.application.config.SystemInitializer;
 import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.GPSIMU;
@@ -43,68 +38,17 @@ public class GurionRockRunner {
 
         /*********************************************** Initialize System *****************************************************/
         String configFile = args[0];
-        String basePath = null;
+        String basePath = new File(configFile).getParent(); //the path to the input folder
+        SystemInitializer initializer = new SystemInitializer(configFile);
+
         //Sensors and other Objects:
-        List<Camera> cameras = new ArrayList<>();
-        List<LiDarWorkerTracker> lidars = new ArrayList<>();
-        GPSIMU gpsimu = null;
+        List<Camera> cameras = initializer.getCameras();
+        List<LiDarWorkerTracker> lidars = initializer.getLidars();
+        GPSIMU gpsimu = initializer.getGpsimu();
+        FusionSlam fusionSlam = initializer.getFusionSlam();
+        int tickTime = initializer.getTickTime();
+        int duration = initializer.getDuration();
         StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
-        FusionSlam fusionSlam = null;
-        int tickTime = 0;
-        int duration = 0;
-
-        //read from json:
-        try {
-            basePath = new File(configFile).getParent(); //the path to the input folder
-            // Read the configuration file
-            Gson gson = new Gson();
-            JsonObject config = gson.fromJson(new FileReader(configFile), JsonObject.class);
-           
-            // Initialize time
-            tickTime = config.get("TickTime").getAsInt();
-            duration = config.get("Duration").getAsInt();
-            
-            // Initialize Cameras
-            JsonObject camerasConfig = config.getAsJsonObject("Cameras");
-            JsonArray cameraConfigs = camerasConfig.getAsJsonArray("CamerasConfigurations");
-            String cameraDataPath = camerasConfig.get("camera_datas_path").getAsString();
-            for (JsonElement cameraConfig : cameraConfigs) {
-                JsonObject cameraJson = cameraConfig.getAsJsonObject();
-                int id = cameraJson.get("id").getAsInt();
-                int frequency = cameraJson.get("frequency").getAsInt();
-                cameras.add(new Camera(id, frequency, basePath + cameraDataPath));
-            }
-            
-            // Initialize LiDar Workers
-            JsonObject lidarConfig = config.getAsJsonObject("LiDarWorkers");
-            JsonArray lidarConfigs = lidarConfig.getAsJsonArray("LidarConfigurations");
-            String lidarDataPath = lidarConfig.get("lidars_data_path").getAsString();
-            for (JsonElement lidarConfigItem : lidarConfigs) {
-                JsonObject lidarJson = lidarConfigItem.getAsJsonObject();
-                int id = lidarJson.get("id").getAsInt();
-                int frequency = lidarJson.get("frequency").getAsInt();
-                lidars.add(new LiDarWorkerTracker(id, frequency,basePath + lidarDataPath));
-            }
-
-            // Initialize GPSIMU
-            String poseJsonFile = config.get("poseJsonFile").getAsString();
-            gpsimu = new GPSIMU(basePath + poseJsonFile);
-
-            // Initialize FusionSlam
-            int numOfSensors = cameras.size() + lidars.size() + 1; //plus one is to represent the GPS
-            fusionSlam = FusionSlam.getInstance(numOfSensors);
-
-            // Display initialization summary (optional)
-            System.out.println("System Initialized:");
-            System.out.println("Cameras: " + cameras.size());
-            System.out.println("LiDar Workers: " + lidars.size());
-            System.out.println("GPSIMU: Initialized");
-            System.out.println("FusionSlam: Initialized with " + numOfSensors + " sensors");
-
-        } catch (IOException e) {
-            // Handle any issues with reading the configuration file
-            System.err.println("Error reading configuration file: " + e.getMessage());
-        }
 
         /*********************************************** Thred Section *****************************************************/
         //Initialize Threds:

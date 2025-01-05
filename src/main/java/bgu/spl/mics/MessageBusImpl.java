@@ -8,6 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+
 //====================================================================================================================
 
 /**
@@ -103,7 +104,6 @@ public class MessageBusImpl implements MessageBus {
 		Queue<MicroService> queue = eventSub.get(e.getClass()); 
 		synchronized (queue) {
 			if (queue == null || queue.isEmpty()) {
-				System.out.println("No subscribers for event " + e.getClass().getSimpleName());
 				return null;
 			}
 			MicroService m = queue.poll(); 
@@ -144,7 +144,6 @@ public class MessageBusImpl implements MessageBus {
 					list.remove(m);
 				}
 			}
-			System.out.println("Unregistered microservice: " + m.getName());
 		}
 	}
 
@@ -152,7 +151,6 @@ public class MessageBusImpl implements MessageBus {
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		BlockingQueue<Message> microQueue = messageQueue.get(m);
 		Message msg = microQueue.take();
-		System.out.println(m.getName() + " received message: " + msg.getClass().getSimpleName());
 		return msg;
 	}
 

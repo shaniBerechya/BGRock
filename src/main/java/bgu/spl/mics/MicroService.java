@@ -153,7 +153,7 @@ public abstract class MicroService implements Runnable {
     }
 
     /**
-     * The entry point of the micro-service. TODO: you must complete this code
+     * The entry point of the micro-service. 
      * otherwise you will end up in an infinite loop.
      */
     @Override
@@ -163,7 +163,8 @@ public abstract class MicroService implements Runnable {
         while (!terminated) {
             try {
                Message message = messageBus.awaitMessage(this);
-               Callback<Message> work = (Callback<Message>) messageToCallback.get(message.getClass());
+               @SuppressWarnings("unchecked")
+            Callback<Message> work = (Callback<Message>) messageToCallback.get(message.getClass());
                work.call(message); //not sure
             }
             catch (InterruptedException e){

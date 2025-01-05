@@ -50,7 +50,6 @@ public class TimeService extends MicroService {
                 sendBroadcast(tickBrodcast);
             }
             else{
-                System.out.println("time reched to 30 and redy to terminate");
                 TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("time");
                 sendBroadcast(terminatedBrodcast);
             }

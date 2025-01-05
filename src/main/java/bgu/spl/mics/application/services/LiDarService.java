@@ -1,8 +1,5 @@
 package bgu.spl.mics.application.services;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBrodcast;
 import bgu.spl.mics.application.messages.DetectObjectsEvent;
@@ -56,6 +53,7 @@ public class LiDarService extends MicroService {
             // Check if it is possible to track objects at the current time
             boolean isPossibleToTreack = true;
             while (isPossibleToTreack) {
+                
                 TrackedObject trackedObject = liDarWorkerTracker.getTrackedObjects(clock);
 
                 if (trackedObject != null) {
@@ -64,6 +62,7 @@ public class LiDarService extends MicroService {
 
                     // Update statistical folder
                     statisticalFolder.updateForLiDar(getName(), trackedObject);
+
                 }
                 else{
                     isPossibleToTreack = false;
@@ -72,7 +71,6 @@ public class LiDarService extends MicroService {
 
             // Handle LiDAR status
             if(liDarWorkerTracker.geStatus() == STATUS.DOWN){
-                System.out.println(getName() + " has stopd");
                 TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("lidar");
                 sendBroadcast(terminatedBrodcast);
                 terminate();
@@ -107,7 +105,6 @@ public class LiDarService extends MicroService {
             terminate();
         });
 
-        // Log initialization
-        System.out.println(getName() + " initialized.");
+        
 }
 }

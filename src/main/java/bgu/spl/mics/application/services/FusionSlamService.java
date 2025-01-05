@@ -35,7 +35,9 @@ public class FusionSlamService extends MicroService {
     public FusionSlamService(FusionSlam fusionSlam) {
         super("fusionSlam");
         this.fusionSlam = fusionSlam;
-        counterOfSensores = new AtomicInteger(fusionSlam.getNumOfSensore());
+        if (fusionSlam != null) {
+            counterOfSensores = new AtomicInteger(fusionSlam.getNumOfSensore());
+        } 
         statisticalFolder = StatisticalFolder.getInstance();
     }
 
@@ -60,7 +62,6 @@ public class FusionSlamService extends MicroService {
 
         // Handle TickBroadcast
         subscribeBroadcast(TickBrodcast.class, TickBrodcast -> {
-            System.out.println("Tick " + TickBrodcast.getBrodcast() + " received by FusionSlamService.");
         });
 
         // Handle TerminatedBrodcast
@@ -70,7 +71,6 @@ public class FusionSlamService extends MicroService {
                 sendBroadcast(terminatedBrodcast);
             }
             else if (TerminatedBrodcast.getSender() != "fusion"){
-                System.out.println("counterOfSensores: " + counterOfSensores +" terminet by: "+ TerminatedBrodcast.getSender());
                 counterOfSensores.decrementAndGet();
                 if(counterOfSensores.get() == 0){
                     TerminatedBrodcast terminatedBrodcast = new TerminatedBrodcast("fusion");
@@ -90,17 +90,7 @@ public class FusionSlamService extends MicroService {
         });
 
         // Log initialization
-        System.out.println(getName() + " initialized.");
     }
-    //metohd to hendl AtomicInteger
-    private void subtractOne() {
-        for(;;){
-            int current = counterOfSensores.get();
-            int plusOne = current - 1;
-            if (counterOfSensores.compareAndSet(current, plusOne)){
-                break;
-            }
-        }
-    }
+
 
 }

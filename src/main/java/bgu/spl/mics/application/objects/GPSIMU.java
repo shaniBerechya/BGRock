@@ -1,18 +1,12 @@
 package bgu.spl.mics.application.objects;
 import java.util.ArrayList;
 import java.util.List;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import java.io.FileReader;
 import java.io.IOException;
-
-
-
-import javax.net.ssl.SSLEngineResult.Status;
 
 /**
  * Represents the robot's GPS and IMU system.
@@ -51,7 +45,6 @@ public class GPSIMU {
      * Loads the pose data from a JSON file.
      */
     private void loadPoseData() {
-    Gson gson = new Gson();
     try (FileReader reader = new FileReader(poseDatasPath)) {
         // Parse the JSON array from the file
         JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
